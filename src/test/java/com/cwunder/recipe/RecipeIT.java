@@ -1,20 +1,23 @@
 package com.cwunder.recipe;
 
+import java.net.URI;
 import java.util.*;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
+import org.junit.jupiter.api.*;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.*;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.test.web.reactive.server.WebTestClient.BodyContentSpec;
+import org.springframework.test.web.reactive.server.WebTestClient.*;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.http.*;
 
 public class RecipeIT {
+    private static final String baseUrl = "http://recipe-app:8080";
     private static WebTestClient client;
 
     @BeforeAll
     static void setupWebCLient() {
-        client = WebTestClient.bindToServer().baseUrl("http://recipe-app:8080").build();
+        client = WebTestClient.bindToServer().baseUrl(baseUrl).build();
     }
 
     @Test
@@ -59,31 +62,56 @@ public class RecipeIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(recipe))
                 .exchange()
-                .expectStatus().isCreated()
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectStatus().isEqualTo(HttpStatus.BAD_REQUEST)
+                .expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .expectBody()
                 .jsonPath(".title").isEqualTo("Validation error")
                 .jsonPath(".errors").exists();
     }
 
     @Test
-    void testPutRecipe() {
+    void testPutRecipe() throws Exception {
         // setup
-        createRecipe();
+        URI link = createRecipe();
         Map<String, String> recipe = new HashMap<String, String>();
         String name = "newname";
         recipe.put("name", "newname");
 
         // execute / assert
-        BodyContentSpec bodySpec = client.put().uri("/recipe")
+        BodyContentSpec bodySpec = client.put().uri(link)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(recipe))
                 .exchange()
-                .expectStatus().isCreated()
+                .expectStatus().isEqualTo(HttpStatus.OK)
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
                 .expectBody()
                 .jsonPath(".name").isEqualTo(name);
         assertCollectionLinks(bodySpec);
+    }
+
+    @Test
+    void testGetRecipe() throws Exception {
+        // setup
+        URI link = createRecipe();
+
+        // execute / assert
+        BodyContentSpec bodySpec = client.get().uri(link)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.OK)
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath(".name").isEqualTo("myrecipe");
+        assertCollectionLinks(bodySpec);
+    }
+
+    @Test
+    void testGetRecipe404() throws Exception {
+        // execute / assert
+        client.get().uri(new URI(String.format("%s/recipe/%s", baseUrl, 1000000000)))
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     void assertCollectionLinks(BodyContentSpec bc) {
@@ -98,15 +126,22 @@ public class RecipeIT {
                 .jsonPath("._links.self.href").exists();
     }
 
-    void createRecipe() {
+    URI createRecipe() throws Exception {
         Map<String, String> recipe = new HashMap<String, String>();
         String name = "myrecipe";
         recipe.put("name", name);
 
         // execute / assert
-        client.post().uri("/recipe")
+        EntityModel<Recipe> rsp = client.post().uri("/recipe")
+                .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(recipe))
-                .exchange();
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(new ParameterizedTypeReference<EntityModel<Recipe>>() {
+                })
+                .returnResult()
+                .getResponseBody();
+        return new URI(String.format("%s/recipe/%s", baseUrl, rsp.getContent().getId()));
     }
 }

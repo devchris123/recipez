@@ -6,9 +6,11 @@ import java.util.stream.Collectors;
 // Spring
 import org.springframework.web.bind.annotation.*;
 import org.springframework.hateoas.*;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindingResult;
+import org.springframework.hateoas.MediaTypes;
+
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 // Jakarta
@@ -25,7 +27,8 @@ public class RecipeController {
         this.assembler = assembler;
     }
 
-    @GetMapping(value = "/recipe", produces = { "application/json" })
+    @GetMapping(value = "/recipe", produces = { MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE,
+            MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE })
     public @ResponseBody CollectionModel<EntityModel<Recipe>> listRecipes() {
         List<EntityModel<Recipe>> recs = repo.findAll().stream()
                 .map(assembler::toModel)
@@ -39,11 +42,8 @@ public class RecipeController {
     }
 
     @PostMapping("/recipe")
-    public @ResponseBody ResponseEntity<?> createRecipe(@Valid @RequestBody Recipe newRecipe,
-            BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return ProblemBuilder.buildProblem(bindingResult);
-        }
+    public @ResponseBody ResponseEntity<?> createRecipe(@Valid @RequestBody Recipe newRecipe) {
+
         EntityModel<Recipe> rec = assembler.toModel(repo.save(newRecipe));
         return ResponseEntity.created(rec.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(rec);
     }
@@ -55,12 +55,7 @@ public class RecipeController {
     }
 
     @PutMapping("/recipe/{id}")
-    public @ResponseBody ResponseEntity<?> updateRecipe(@Valid @RequestBody Recipe newRecipe,
-            BindingResult bindingResult,
-            @PathVariable Long id) {
-        if (bindingResult.hasErrors()) {
-            return ProblemBuilder.buildProblem(bindingResult);
-        }
+    public @ResponseBody ResponseEntity<?> updateRecipe(@Valid @RequestBody Recipe newRecipe, @PathVariable Long id) {
         Recipe rec = repo.findById(id)
                 .map(
                         recipe -> {

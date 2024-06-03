@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 @Entity
 public class Recipe {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @NotNull
@@ -69,5 +70,4 @@ public class Recipe {
     public String toString() {
         return "Recipe{" + "id=" + this.id + ", name='" + this.name + '\'' + '}';
     }
-
 }
