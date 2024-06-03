@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  recipe-app:
+    networks:
+      - recipe-network
+  recipe-db:
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - recipe-network
+
+volumes:
+  db-data:
+
+networks:
+  recipe-network:

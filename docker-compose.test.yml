@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  test-client:
+    command: ["mvn", "verify"]
+    build:
+      dockerfile: Dockerfile
+      context: .
+    depends_on:
+      recipe-app:
+        condition: service_healthy
+    networks:
+      - recipe-network-test
+  recipe-app:
+    networks:
+      - recipe-network-test
+    healthcheck:
+      test: "curl localhost:8080/DOES_NOT_EXIST | grep status || exit 1"
+      interval: 10s
+      retries: 3
+      timeout: 30s
+  recipe-db:
+    networks:
+      - recipe-network-test
+
+networks:
+  recipe-network-test:

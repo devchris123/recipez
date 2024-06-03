@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  recipe-app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: recipe-app
+    depends_on:
+      recipe-db:
+        condition: service_healthy
+    ports:
+      - 8080:8080
+    volumes:
+      - type: bind
+        source: ./src
+        target: /recipe/src
+    environment:
+      - DB_HOST=recipe-db
+      - DB_PORT=3306
+      - DB_USER=recipeapp
+      - DB_NAME=recipedb
+      - DB_PASSWORD=password
+
+  recipe-db:
+    build:
+      dockerfile: Dockerfile_DB
+      context: .
+    healthcheck:
+      interval: 10s
+      retries: 3
+      test:
+        [
+          "CMD",
+          "healthcheck.sh",
+          "--su-mysql",
+          "--connect",
+          "--innodb_initialized",
+        ]
+      timeout: 30s
+    environment:
+      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db_password_root
+      - MARIADB_USER=recipeapp
+      - MARIADB_DATABASE=recipedb
+      - MARIADB_PASSWORD_FILE=/run/secrets/db_password
+    secrets:
+      - db_password_root
+      - db_password
+
+secrets:
+  db_password_root:
+    file: db_password_root
+  db_password:
+    file: db_password

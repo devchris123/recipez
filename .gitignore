@@ -1,0 +1,13 @@
+.vscode
+.devcontainer
+.github
+
+build
+node_modules
+
+# maven builds
+target/
+.mvn/
+
+# passwords
+db_password*
