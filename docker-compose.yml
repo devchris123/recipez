@@ -20,7 +20,8 @@ services:
       - DB_PORT=3306
       - DB_USER=recipeapp
       - DB_NAME=recipedb
-      - DB_PASSWORD=password
+      - DB_PASSWORD=b74z0lIXfM8Qh0wL
+      - REL_BASE_URL=http://localhost:8080
 
   recipe-db:
     build:
@@ -40,7 +41,7 @@ services:
       timeout: 30s
     environment:
       - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db_password_root
-      - MARIADB_USER=recipeapp
+      - MARIADB_USER=recipeappadmin
       - MARIADB_DATABASE=recipedb
       - MARIADB_PASSWORD_FILE=/run/secrets/db_password
     secrets:

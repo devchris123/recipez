@@ -1,29 +1,38 @@
 package com.cwunder.recipe;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
 import org.junit.jupiter.api.*;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.*;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.reactive.server.WebTestClient.*;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.http.*;
 
 public class RecipeIT {
     private static final String baseUrl = "http://recipe-app:8080";
-    private static WebTestClient client;
+    private static WebTestClient testClient;
+    private static WebClient webClient;
+
+    private static String RECIPE_ENDPOINT = "/recipes";
 
     @BeforeAll
     static void setupWebCLient() {
-        client = WebTestClient.bindToServer().baseUrl(baseUrl).build();
+        testClient = WebTestClient.bindToServer().baseUrl(baseUrl).build();
+        webClient = WebClient.create(baseUrl);
     }
 
     @Test
     void testListRecipes() {
         // execute / assert
-        BodyContentSpec bodySpec = client.get().uri("/recipe")
+        BodyContentSpec bodySpec = testClient.get().uri(RECIPE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
@@ -40,7 +49,7 @@ public class RecipeIT {
         recipe.put("name", "myrecipe");
 
         // execute / assert
-        BodyContentSpec bodySpec = client.post().uri("/recipe")
+        BodyContentSpec bodySpec = testClient.post().uri(RECIPE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(recipe))
                 .exchange()
@@ -58,7 +67,7 @@ public class RecipeIT {
         recipe.put("name", "");
 
         // execute / assert
-        client.post().uri("/recipe")
+        testClient.post().uri(RECIPE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(recipe))
                 .exchange()
@@ -78,7 +87,7 @@ public class RecipeIT {
         recipe.put("name", "newname");
 
         // execute / assert
-        BodyContentSpec bodySpec = client.put().uri(link)
+        BodyContentSpec bodySpec = testClient.put().uri(link)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(recipe))
                 .exchange()
@@ -95,7 +104,7 @@ public class RecipeIT {
         URI link = createRecipe();
 
         // execute / assert
-        BodyContentSpec bodySpec = client.get().uri(link)
+        BodyContentSpec bodySpec = testClient.get().uri(link)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isEqualTo(HttpStatus.OK)
@@ -108,7 +117,7 @@ public class RecipeIT {
     @Test
     void testGetRecipe404() throws Exception {
         // execute / assert
-        client.get().uri(new URI(String.format("%s/recipe/%s", baseUrl, 1000000000)))
+        testClient.get().uri(new URI(String.format("%s/recipes/%s", baseUrl, 1000000000)))
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isEqualTo(HttpStatus.NOT_FOUND);
@@ -132,16 +141,24 @@ public class RecipeIT {
         recipe.put("name", name);
 
         // execute / assert
-        EntityModel<Recipe> rsp = client.post().uri("/recipe")
+        String recEM = webClient.post().uri(RECIPE_ENDPOINT)
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
+                .accept(MediaTypes.HAL_JSON)
                 .body(BodyInserters.fromValue(recipe))
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody(new ParameterizedTypeReference<EntityModel<Recipe>>() {
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(s -> s.path("_links"))
+                .map(s -> s.path("self"))
+                .map(s -> s.path("href"))
+                .map(s -> {
+                    try {
+                        return (new ObjectMapper()).readValue(s.traverse(), String.class);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return "";
+                    }
                 })
-                .returnResult()
-                .getResponseBody();
-        return new URI(String.format("%s/recipe/%s", baseUrl, rsp.getContent().getId()));
+                .block();
+        return new URI(recEM);
     }
 }

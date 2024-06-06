@@ -1,4 +1,4 @@
-package com.cwunder.recipe;
+package com.cwunder.recipe._shared;
 
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.mediatype.problem.Problem;
@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-public class RecipeNotFoundAdvice {
-    @ExceptionHandler(RecipeNotFoundException.class)
+public class NotFoundAdvice {
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    ResponseEntity<Problem> recipeNotFoundHandler(RecipeNotFoundException ex) {
+    ResponseEntity<Problem> recipeNotFoundHandler(NotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
-                .body(Problem.create().withTitle("Entity not found"));
+                .body(Problem.create().withTitle(ex.getMessage() + " not found"));
     }
 
 }

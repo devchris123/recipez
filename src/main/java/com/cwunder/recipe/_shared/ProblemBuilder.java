@@ -1,4 +1,4 @@
-package com.cwunder.recipe;
+package com.cwunder.recipe._shared;
 
 import java.util.*;
 
