@@ -1,6 +1,5 @@
 .vscode
 .devcontainer
-.github
 
 build
 node_modules
