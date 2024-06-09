@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.yml -f docker-compose.local.yml convert
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: recipe-db
+  name: recipe-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: recipe-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f docker-compose.yml -f docker-compose.local.yml convert
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: recipe-db
+    spec:
+      containers:
+        - env:
+            - name: MARIADB_DATABASE
+              value: recipedb
+            - name: MARIADB_PASSWORD_FILE
+              value: /run/dockersecrets/db_password
+            - name: MARIADB_ROOT_PASSWORD_FILE
+              value: /run/dockersecrets/db_password_root
+            - name: MARIADB_USER
+              value: recipeappadmin
+          image: chris132/recipe-db:latest
+          name: recipe-db
+          resources: {}
+          volumeMounts:
+            - mountPath: /run/dockersecrets/
+              name: db-secrets
+      restartPolicy: Always
+      volumes:
+        - name: db-secrets
+          secret:
+            items:
+              - key: db_password
+                path: db_password
+              - key: db_password_root
+                path: db_password_root
+            secretName: db-secrets
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: db-data
+status: {}

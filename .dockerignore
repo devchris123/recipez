@@ -1,0 +1,11 @@
+.devcontainer
+.github
+.mvn
+.ssh_workers
+.terraform*
+.vscode
+target
+.tfvars
+.cloud-init*
+db_password*
+docker-compose*

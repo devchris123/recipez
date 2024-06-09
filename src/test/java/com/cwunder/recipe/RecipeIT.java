@@ -56,7 +56,7 @@ public class RecipeIT {
                 .expectStatus().isCreated()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
                 .expectBody()
-                .jsonPath(".name").isEqualTo(name);
+                .jsonPath("$.name").isEqualTo(name);
         assertCollectionLinks(bodySpec);
     }
 
@@ -94,7 +94,7 @@ public class RecipeIT {
                 .expectStatus().isEqualTo(HttpStatus.OK)
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
                 .expectBody()
-                .jsonPath(".name").isEqualTo(name);
+                .jsonPath("$.name").isEqualTo(name);
         assertCollectionLinks(bodySpec);
     }
 
@@ -110,7 +110,7 @@ public class RecipeIT {
                 .expectStatus().isEqualTo(HttpStatus.OK)
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
                 .expectBody()
-                .jsonPath(".name").isEqualTo("myrecipe");
+                .jsonPath("$.name").isEqualTo("myrecipe");
         assertCollectionLinks(bodySpec);
     }
 
@@ -125,8 +125,8 @@ public class RecipeIT {
 
     void assertCollectionLinks(BodyContentSpec bc) {
         assertSelfLinks(bc);
-        bc.jsonPath("._links.recipes").exists()
-                .jsonPath("._links.recipes.href").exists();
+        bc.jsonPath("._links.ex:recipes").exists()
+                .jsonPath("._links.ex:recipes.href").exists();
     }
 
     void assertSelfLinks(BodyContentSpec bc) {

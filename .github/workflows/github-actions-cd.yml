@@ -1,0 +1,74 @@
+name: GitHub Actions Continous Deployment
+run-name: ${{ github.actor }}
+
+concurrency: development
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    if: ${{!github.event.pull_request || github.event.pull_request.merged == true}}
+    uses: ./.github/workflows/github-actions-ci.yml
+  deploy:
+    if: ${{!github.event.pull_request || github.event.pull_request.merged == true}}
+    needs: [test]
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: chris132
+          password: ${{ secrets.DOCKER_PAT }}
+      - name: Build and push App image
+        uses: docker/build-push-action@v5
+        with:
+          file: Dockerfile_Prod
+          platforms: linux/arm64
+          push: true
+          tags: |
+            chris132/recipe-app:latest
+            chris132/recipe-app:${{ github.sha }}
+      - name: Build and push DB image
+        uses: docker/build-push-action@v5
+        with:
+          file: Dockerfile_DB
+          platforms: linux/arm64
+          push: true
+          tags: |
+            chris132/recipe-db:latest
+            chris132/recipe-db:${{ github.sha }}
+      - name: Set the Kubernetes context
+        uses: azure/k8s-set-context@v2
+        with:
+          method: service-account
+          k8s-url: https://78.46.175.165:6443
+          k8s-secret: ${{ secrets.KUBERNETES_SECRET }}
+      - name: Deploy to the Kubernetes cluster
+        uses: azure/k8s-deploy@v1
+        with:
+          namespace: default
+          manifests: |
+            db-data-persistentvolumeclaim.yaml
+            recipe-app-deployment.yaml
+            recipe-app-service.yaml
+            recipe-db-deployment.yaml
+            recipe-db-service.yaml
+          images: |
+            chris132/recipe-app:${{ github.sha }}
+            chris132/recipe-db:${{ github.sha }}

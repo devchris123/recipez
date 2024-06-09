@@ -78,7 +78,6 @@ public class RecipeController {
 
     @PostMapping()
     public @ResponseBody ResponseEntity<?> createRecipe(@Valid @RequestBody Recipe newRecipe) {
-
         EntityModel<Recipe> rec = assembler.toModel(repo.save(newRecipe));
         return ResponseEntity.created(rec.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(rec);
     }

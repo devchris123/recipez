@@ -1,0 +1,36 @@
+name: GitHub Actions Continous Integration
+run-name: ${{ github.actor }}
+
+on:
+  pull_request:
+    types: [opened, reopened, edited]
+    branches:
+      - "feature/**"
+      - "!main"
+    paths:
+      - "src/**"
+      - ".github/workflows/github-actions-ci.yml"
+      - "docker-compose.yml"
+      - "docker-compose.test.yml"
+      - "Dockerfile_DB"
+      - "Dockerfile"
+      - "recipes.sql"
+      - "pom.xml"
+      - "mariadb.cnf"
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create passwords file to mount
+        run: |
+          touch db_password
+          touch db_password_root
+          echo "test_db_password" >> db_password
+          echo "test_db_password_root" >> db_password_root
+        shell: bash
+      - name: Run tests
+        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up --build --abort-on-container-exit
