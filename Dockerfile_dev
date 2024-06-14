@@ -1,7 +1,0 @@
-# This Dockerfile is used for the development container 
-# and not relevant for any building process or pipeline
-FROM maven:3.9.6
-
-WORKDIR /recipes
-
-COPY . /recipes
