@@ -18,6 +18,11 @@ jobs:
   test:
     if: ${{!github.event.pull_request || github.event.pull_request.merged == true}}
     uses: ./.github/workflows/github-actions-ci.yml
+    secrets:
+      DB_PASSWORD_SECRET: ${{ secrets.DB_PASSWORD_SECRET }}
+      DB_ROOT_PASSWORD_SECRET: ${{ secrets.DB_ROOT_PASSWORD_SECRET }}
+      APP_DATASOURCE_SECRET: ${{ secrets.APP_DATASOURCE_SECRET }}
+      APP_JWT_SSH_KEYS_SECRET: ${{ secrets.APP_JWT_SSH_KEYS_SECRET }}
   deploy:
     if: ${{!github.event.pull_request || github.event.pull_request.merged == true}}
     needs: [test]
@@ -39,6 +44,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           file: Dockerfile_Prod
+          build-args: |
+            "SPRING_CONFIG_LOCATION=/.application.ssh-keys.yml"
           platforms: linux/arm64
           push: true
           tags: |

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
 @TestConfiguration
-@Profile("test")
+@Profile({ "test", "integration-test" })
 public class ITAppConfig {
     @Bean
     public WebTestClientBuilderCustomizer webTestClientBuilderCustomizer() {

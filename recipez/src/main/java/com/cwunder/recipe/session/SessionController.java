@@ -6,7 +6,7 @@ import java.util.HashMap;
 
 // DI
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.context.annotation.Profile;
 // Annotations
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +23,8 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
 @Controller
-@RequestMapping("/session")
+@RequestMapping("/sessions")
+@Profile({ "production", "integration-test" })
 public class SessionController {
     @Autowired
     JwtEncoder jwtEnc;

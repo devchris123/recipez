@@ -18,6 +18,15 @@ on:
       - "pom.xml"
       - "mariadb.cnf"
   workflow_call:
+    secrets:
+      DB_PASSWORD_SECRET:
+        required: true
+      DB_ROOT_PASSWORD_SECRET:
+        required: true
+      APP_DATASOURCE_SECRET:
+        required: true
+      APP_JWT_SSH_KEYS_SECRET:
+        required: true
 
 jobs:
   test:
@@ -39,9 +48,3 @@ jobs:
         shell: bash
       - name: Run tests
         run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up --build --abort-on-container-exit
-      - name: Inspect container
-        if: always()
-        run: |
-          docker logs recipe-app
-          docker inspect --format "{{json .State.Health }}" recipe-app | jq
-        shell: bash

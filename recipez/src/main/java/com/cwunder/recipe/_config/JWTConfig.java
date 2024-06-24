@@ -1,35 +1,24 @@
 package com.cwunder.recipe._config;
 
-// Java SE
-import javax.sql.DataSource;
-
-// Java Security
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
-// Http
-import org.springframework.http.HttpMethod;
-
-// Annotations
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-
-// Hateoas
-import org.springframework.hateoas.config.EnableHypermediaSupport;
-import org.springframework.hateoas.mediatype.hal.CurieProvider;
-import org.springframework.hateoas.mediatype.hal.DefaultCurieProvider;
-import org.springframework.hateoas.UriTemplate;
-
-// Spring Security
+import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import com.cwunder.recipe.user.CustomUserDetailsService;
 // Nimbus JWT
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -38,42 +27,37 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
-// Recipe
-import com.cwunder.recipe.user.CustomUserDetailsService;
-
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @Import(BaseConfig.class)
-@EnableHypermediaSupport(type = { EnableHypermediaSupport.HypermediaType.HAL,
-        EnableHypermediaSupport.HypermediaType.HAL_FORMS })
-@EnableWebSecurity
-public class AppConfig {
-    @Autowired
-    DataSource dataSource;
-
+@Profile({ "production", "integration-test" })
+public class JWTConfig {
     @Value("${jwt.public.key}")
     RSAPublicKey key;
 
     @Value("${jwt.private.key}")
     RSAPrivateKey priv;
 
-    @Bean
-    public CurieProvider curieProvider() {
-        var relBaseUrl = System.getenv("REL_BASE_URL");
-        var relTemplate = String.format("%s/rels/{rel}", relBaseUrl);
-        return new DefaultCurieProvider("ex", UriTemplate.of(relTemplate));
+    @Autowired
+    CustomUserDetailsService userDetailsService;
+
+    JWTUtil jwtUtil() {
+        return new JWTUtil(userDetailsService);
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        var jwtUtil = jwtUtil();
         http
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").anonymous()
                         .anyRequest().authenticated())
                 .csrf((csrf) -> csrf.disable())
-                .oauth2ResourceServer((oauth2) -> oauth2.jwt(withDefaults()))
+                .oauth2ResourceServer((oauth2) -> oauth2.jwt(
+                        // Customize JwtAuthentication to override the returned principal
+                        jwt -> jwt.jwtAuthenticationConverter(jwtUtil::createJwtUser)))
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(withDefaults());
         return http.build();
@@ -90,10 +74,4 @@ public class AppConfig {
         JWKSource<SecurityContext> jkws = new ImmutableJWKSet<>(new JWKSet(jwk));
         return new NimbusJwtEncoder(jkws);
     }
-
-    @Bean
-    CustomUserDetailsService customUserDetailsService() {
-        return new CustomUserDetailsService();
-    }
-
 }

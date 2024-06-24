@@ -107,7 +107,6 @@ public class IngredientQuantityControllerTest {
                 .jsonPath("$._links.self.href").value(v -> {
                     var self = (String) v;
                     // execute / assert
-                    System.out.println(self);
                     ingrQuantClient.delete().uri(self)
                             .exchange().expectStatus().isNoContent();
                     ingrQuantClient.get().uri(self)

@@ -14,7 +14,7 @@ import com.cwunder.recipe._config.BaseConfig;
 
 @Configuration
 @Import(BaseConfig.class)
-@Profile("test")
+@Profile({ "test", "integration-test" })
 public class TestAppConfig {
     @Autowired
     DataSource dataSource;

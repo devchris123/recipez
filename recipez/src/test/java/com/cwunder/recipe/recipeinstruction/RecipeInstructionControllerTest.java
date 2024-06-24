@@ -99,7 +99,6 @@ public class RecipeInstructionControllerTest {
                 .jsonPath("$._links.self.href").value(v -> {
                     var self = (String) v;
                     // execute / assert
-                    System.out.println(self);
                     recInstrClient.delete().uri(self)
                             .exchange().expectStatus().isNoContent();
                     recInstrClient.get().uri(self)

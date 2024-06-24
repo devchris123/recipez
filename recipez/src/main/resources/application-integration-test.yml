@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:recipedb;DATABASE_TO_UPPER=false;MODE=MySQL;NON_KEYWORDS=USER
+    username: sa
+    password:
+  sql:
+    init.mode: always
+    init.data-locations: classpath:recipes-data.sql
+  jpa:
+    hibernate.ddl-auto: create
+    defer-datasource-initialization: true
+    show-sql: true
+    hibernate.naming-strategy: org.hibernate.cfg.ImprovedNamingStrategy
+
+  jwt.private.key: optional:classpath:pkcs8.id_rsa
+  jwt.public.key: optional:classpath:id_rsa.pem

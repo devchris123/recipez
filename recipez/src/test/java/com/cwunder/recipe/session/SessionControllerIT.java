@@ -29,8 +29,8 @@ import com.cwunder.recipe._test.WithMockCustomUser;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@ActiveProfiles("test")
-public class SessionControllerTest {
+@ActiveProfiles({ "integration-test" })
+public class SessionControllerIT {
     @Autowired
     TestFixture testFixture;
 
@@ -57,7 +57,7 @@ public class SessionControllerTest {
     @WithMockCustomUser(username = "testuser", password = "testpw")
     void testCreateSession() {
         // setup
-        client.post().uri("/session")
+        client.post().uri("/sessions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()

@@ -38,8 +38,8 @@ spec:
           name: recipe-db
           resources: {}
           volumeMounts:
-            - mountPath: /run/dockersecrets/
-              name: db-secrets
+            - name: db-secrets
+              mountPath: /run/dockersecrets/
       restartPolicy: Always
       volumes:
         - name: db-secrets
