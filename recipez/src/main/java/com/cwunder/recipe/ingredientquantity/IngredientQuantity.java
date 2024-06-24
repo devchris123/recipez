@@ -1,14 +1,21 @@
 package com.cwunder.recipe.ingredientquantity;
 
+// Java SE
 import java.math.BigDecimal;
 
-import com.cwunder.recipe._shared.AppEntity;
-import com.cwunder.recipe.ingredient.Ingredient;
-import com.cwunder.recipe.recipe.Recipe;
+// JSON
 import com.cwunder.recipe.unit.Unit;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+// Jakarta 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
+// Recipe
+import com.cwunder.recipe._shared.AppEntity;
+import com.cwunder.recipe.ingredient.Ingredient;
+import com.cwunder.recipe.recipe.Recipe;
 
 @Entity
 @Table(name = "IngredientQuantity")
@@ -17,6 +24,8 @@ public class IngredientQuantity extends AppEntity {
     @JoinColumn(name = "ingredient", nullable = false)
     private Ingredient ingredient;
 
+    @NotNull
+    @Positive
     private BigDecimal quantity;
 
     @ManyToOne(fetch = FetchType.EAGER)

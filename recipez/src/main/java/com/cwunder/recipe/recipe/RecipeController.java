@@ -19,6 +19,8 @@ import com.cwunder.recipe.recipeinstruction.RecipeInstructionRepository;
 import com.cwunder.recipe.recipeinstruction.RecipeInstructionWrite;
 import com.cwunder.recipe.unit.Unit;
 import com.cwunder.recipe.unit.UnitRepository;
+import com.cwunder.recipe.user.User;
+import com.cwunder.recipe.user.UserRepository;
 
 import org.springframework.hateoas.*;
 import org.springframework.http.MediaType;
@@ -46,9 +48,12 @@ public class RecipeController {
     private final RecipeInstructionRepository recInstrRepo;
     private final RecipeInstructionModelAssembler recInstrAssembler;
 
+    private final UserRepository userRepo;
+
     RecipeController(RecipeRepository repo, RecipeModelAssembler assembler, IngredientQuantityRepository ingrQRepo,
             IngredientQuantityModelAssembler ingrQAssembler, RecipeInstructionRepository recInstrRepo,
-            RecipeInstructionModelAssembler recInstrAssembler, IngredientRepository ingrRepo, UnitRepository unitRepo) {
+            RecipeInstructionModelAssembler recInstrAssembler, IngredientRepository ingrRepo, UnitRepository unitRepo,
+            UserRepository userRepo) {
         this.repo = repo;
         this.assembler = assembler;
         this.ingrQRepo = ingrQRepo;
@@ -57,6 +62,7 @@ public class RecipeController {
         this.recInstrAssembler = recInstrAssembler;
         this.ingrRepo = ingrRepo;
         this.unitRepo = unitRepo;
+        this.userRepo = userRepo;
     }
 
     @GetMapping(produces = { MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE,
@@ -78,7 +84,11 @@ public class RecipeController {
 
     @PostMapping()
     public @ResponseBody ResponseEntity<?> createRecipe(@Valid @RequestBody Recipe newRecipe) {
-        EntityModel<Recipe> rec = assembler.toModel(repo.save(newRecipe));
+        User user = userRepo.findByUsernameAuth(newRecipe.getUsername()).orElseThrow(this::generateNotFoundException);
+        newRecipe.setUser(user);
+        var newRec = repo.save(newRecipe);
+        newRec = repo.getByPublicId(newRec.getPublicId());
+        EntityModel<Recipe> rec = assembler.toModel(newRec);
         return ResponseEntity.created(rec.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(rec);
     }
 
@@ -107,10 +117,6 @@ public class RecipeController {
         return ResponseEntity.noContent().build();
     }
 
-    private NotFoundException generateNotFoundException() {
-        return new NotFoundException("Recipe");
-    }
-
     // Subresources accessible through this route
     @GetMapping("/{id}/ingredientquantities")
     public @ResponseBody CollectionModel<EntityModel<IngredientQuantity>> listIngredientQuantities(
@@ -137,9 +143,11 @@ public class RecipeController {
             @Valid @RequestBody IngredientQuantityWrite newIngredientQuantityData, @PathVariable String id) {
         Recipe rec = repo.findByPublicId(id).orElseThrow(this::generateNotFoundException);
         Ingredient ingr = ingrRepo.findByPublicId(newIngredientQuantityData.getIngredient())
-                .orElseThrow(this::generateNotFoundException);
+                .or(() -> ingrRepo.findByName(newIngredientQuantityData.getIngredient()))
+                .orElseThrow(() -> generateNotFoundException("Ingredient"));
         Unit ut = unitRepo.findByPublicId(newIngredientQuantityData.getUnit())
-                .orElseThrow(this::generateNotFoundException);
+                .or(() -> unitRepo.findByUnit(newIngredientQuantityData.getUnit()))
+                .orElseThrow(() -> generateNotFoundException("Unit"));
         var newIngrQuant = new IngredientQuantity();
         newIngrQuant.setQuantity(newIngredientQuantityData.getQuantity());
         newIngrQuant.setIngredient(ingr);
@@ -159,5 +167,13 @@ public class RecipeController {
         newRecInstr.setRecipe(rec);
         EntityModel<RecipeInstruction> recInstrEM = recInstrAssembler.toModel(recInstrRepo.save(newRecInstr));
         return ResponseEntity.created(recInstrEM.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(recInstrEM);
+    }
+
+    private NotFoundException generateNotFoundException() {
+        return new NotFoundException("Recipe");
+    }
+
+    private NotFoundException generateNotFoundException(String entity) {
+        return new NotFoundException(entity);
     }
 }

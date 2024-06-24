@@ -29,13 +29,19 @@ jobs:
         run: |
           touch db_password
           touch db_password_root
-          echo "test_db_password" >> db_password
-          echo "test_db_password_root" >> db_password_root
+          echo "${{ secrets.DB_PASSWORD_SECRET }}" >> db_password
+          echo "${{ secrets.DB_ROOT_PASSWORD_SECRET }}" >> db_password_root
         shell: bash
       - name: Create secrets files
         run: |
-          echo ${{ secrets.APP_DATASOURCE_SECRET }} >> .application.datasource.yml
-          echo ${{ secrets.APP_JWT_SSH_KEYS_SECRET }} >> .application.ssh-keys.yml
+          echo "${{ secrets.APP_DATASOURCE_SECRET }}" >> .application.datasource.yml
+          echo "${{ secrets.APP_JWT_SSH_KEYS_SECRET }}" >> .application.ssh-keys.yml
         shell: bash
       - name: Run tests
         run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up --build --abort-on-container-exit
+      - name: Inspect container
+        if: always()
+        run: |
+          docker logs recipe-app
+          docker inspect --format "{{json .State.Health }}" recipe-app | jq
+        shell: bash

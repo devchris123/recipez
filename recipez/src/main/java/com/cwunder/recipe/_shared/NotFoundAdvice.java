@@ -16,8 +16,15 @@ public class NotFoundAdvice {
     ResponseEntity<Problem> recipeNotFoundHandler(NotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
                 .body(Problem.create().withTitle(ex.getMessage() + " not found"));
     }
 
+    @ExceptionHandler(ExistsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ResponseEntity<Problem> entityExistsHandler(ExistsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create().withTitle(ex.getMessage() + " already exists"));
+    }
 }

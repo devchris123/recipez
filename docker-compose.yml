@@ -28,6 +28,7 @@ services:
     build:
       dockerfile: Dockerfile_DB
       context: .
+    container_name: recipe-db
     healthcheck:
       interval: 10s
       retries: 3

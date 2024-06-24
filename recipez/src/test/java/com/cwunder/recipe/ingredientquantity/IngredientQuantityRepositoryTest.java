@@ -1,20 +1,37 @@
 package com.cwunder.recipe.ingredientquantity;
 
+// Java SE
+import java.math.BigDecimal;
+
+// Junit
+import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.*;
-
+// Annotations
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+
+// Spring Boot Test
 import org.springframework.boot.test.context.SpringBootTest;
+
+// Spring Test
 import org.springframework.test.context.ActiveProfiles;
 
+// Json
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+// Recipe
+import com.cwunder.recipe._test.TestFixture;
+import com.cwunder.recipe._test.UserFixture;
+import com.cwunder.recipe._test.WithMockCustomUser;
 import com.cwunder.recipe.ingredient.IngredientRepository;
 import com.cwunder.recipe.recipe.Recipe;
 import com.cwunder.recipe.recipe.RecipeRepository;
 import com.cwunder.recipe.unit.UnitRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 @SpringBootTest
+@Transactional
+@WithMockCustomUser(username = "testuser")
 @ActiveProfiles("test")
 public class IngredientQuantityRepositoryTest {
     @Autowired
@@ -26,11 +43,27 @@ public class IngredientQuantityRepositoryTest {
     @Autowired
     private RecipeRepository recRepo;
 
+    @Autowired
+    private UserFixture userFxt;
+
+    @Autowired
+    private TestFixture testFixture;
+
+    @BeforeEach
+    public void setupEach() {
+        testFixture.cleanDB();
+
+    }
+
     @Test
     public void testCreateIngredientQuantity() throws JsonProcessingException {
         // setup
+        var user = userFxt.createUser("testuser", "testpw");
         var newRec = new Recipe();
         newRec.setName("myrecipe");
+        // We need to set the username to satisfy validation
+        newRec.setUsername("testuser");
+        newRec.setUser(user);
         var rec = recRepo.save(newRec);
         var ing = ingrRepo.getReferenceById((long) 1);
         var unit = unitRepo.getReferenceById((long) 1);
@@ -38,6 +71,7 @@ public class IngredientQuantityRepositoryTest {
         ingQ.setRecipe(rec);
         ingQ.setUnit(unit);
         ingQ.setIngredient(ing);
+        ingQ.setQuantity(new BigDecimal(10));
 
         // execute
         var newIngQ = repo.save(ingQ);

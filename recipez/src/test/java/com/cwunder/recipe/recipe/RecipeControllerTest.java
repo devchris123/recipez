@@ -1,60 +1,56 @@
 package com.cwunder.recipe.recipe;
 
+// Java SE
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+// Junit
 import org.junit.jupiter.api.*;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
+// Web
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.http.MediaType;
+
+// Transactions
+import org.springframework.transaction.annotation.Transactional;
+
+// Spring Boot Test
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+
+// Spring Test
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.reactive.server.WebTestClient.BodyContentSpec;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.mediatype.problem.Problem;
+// Hateoas
+import org.springframework.hateoas.MediaTypes;
 
-import com.cwunder.recipe._shared.ValidationAdvice;
+import com.cwunder.recipe._test.RecipeControllerFixture;
+// Jackson
+import com.cwunder.recipe._test.RecipeFixture;
+
+// Recipe
+import com.cwunder.recipe._test.TestFixture;
+import com.cwunder.recipe._test.UserFixture;
+import com.cwunder.recipe._test.WithMockCustomUser;
 import com.cwunder.recipe.ingredient.IngredientRepository;
-import com.cwunder.recipe.ingredientquantity.IngredientQuantity;
-import com.cwunder.recipe.ingredientquantity.IngredientQuantityModelAssembler;
-import com.cwunder.recipe.ingredientquantity.IngredientQuantityRepository;
-import com.cwunder.recipe.recipeinstruction.RecipeInstruction;
-import com.cwunder.recipe.recipeinstruction.RecipeInstructionModelAssembler;
-import com.cwunder.recipe.recipeinstruction.RecipeInstructionRepository;
 import com.cwunder.recipe.unit.UnitRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+// Other
+import org.springframework.beans.factory.annotation.Autowired;
 
 @SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+@WithMockCustomUser(username = "testuser")
 @ActiveProfiles("test")
 public class RecipeControllerTest {
     @Autowired
-    private RecipeModelAssembler assembler;
-    @Autowired
-    private RecipeRepository repo;
-    @Autowired
-    private IngredientQuantityRepository ingrQRepo;
-    @Autowired
-    private IngredientQuantityModelAssembler ingrQAssembler;
-    @Autowired
-    private RecipeInstructionRepository recInstrRepo;
-    @Autowired
-    private RecipeInstructionModelAssembler recInstrAssembler;
-    @Autowired
     private IngredientRepository ingrRepo;
+
     @Autowired
     private UnitRepository unitRepo;
 
@@ -62,147 +58,257 @@ public class RecipeControllerTest {
 
     private final String CONTROLLER_URL = "/recipes";
 
+    @Autowired
+    private UserFixture userFxt;
+
+    @Autowired
+    private RecipeFixture recFxt;
+
+    @Autowired
+    private TestFixture testFixture;
+
+    static String VALIDATION_ERROR_MESSAGE = "Validation error";
+
+    @BeforeEach
+    void setup() {
+        testFixture.cleanDB();
+        // Create a user that is used in subsequent authentications
+        var user = userFxt.createUser("testuser", "testpw");
+        // Create some random data to simulate a more complete environment
+        var user2 = userFxt.createUser("testuser2", "testpw2");
+        recFxt.createRecipe(user);
+        recFxt.createRecipe(user2);
+    }
+
+    @Autowired
+    void setMockMvc(MockMvc mockMvc) {
+        client = MockMvcWebTestClient.bindTo(mockMvc)
+                .defaultHeader("Accept", MediaTypes.HAL_JSON_VALUE)
+                .baseUrl(CONTROLLER_URL)
+                .build();
+    }
+
     @Test
     void testCreateRecipe() {
-        client = buildWebTestClient();
-        var recipe = new HashMap<String, Object>();
-        String name = "testcreaterecipe";
-        recipe.put("name", name);
+        // setup
+        var recipe = createRecipeData();
 
         // execute
-        EntityModel<Recipe> rsp = postRecipe(client, recipe);
+        ResponseSpec rsp = postRecipe(client, recipe);
 
         // assert
-        assertNotNull(rsp);
-        rsp.getRequiredLink(IanaLinkRelations.SELF);
-        var cont = rsp.getContent();
-        assertNotNull(cont);
-        // Do not test for the exact hrefs, since deserialization does not work for
-        // publicId
-        // Because it is set to READ_ONLY for json (de)serialization
-        // We need another way to retrieve the json from the response than
-        // deserialization
+        BodyContentSpec spec = rsp.expectStatus().isCreated()
+                .expectBody();
+        assertRecipeJsonPath(spec);
     }
 
     @Test
     void testCreateRecipe400() throws Exception {
         // setup
-        ObjectMapper om = new ObjectMapper();
-        MockMvc mockMvc = MockMvcBuilders
-                .standaloneSetup(buildController())
-                .setControllerAdvice(new ValidationAdvice())
-                .build();
-        client = buildWebTestClient();
         var recipe = new HashMap<String, Object>();
         String name = "";
         recipe.put("name", name);
 
         // execute
-        MvcResult mvcres = mockMvc.perform(post(CONTROLLER_URL)
-                .accept(MediaType.APPLICATION_JSON)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(recipe)))
-                .andExpect(status().isBadRequest())
-                .andReturn();
+        client.post().contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(recipe))
+                .exchange()
+                .expectStatus().is4xxClientError()
+                .expectBody()
+                .jsonPath("$.title").isEqualTo(VALIDATION_ERROR_MESSAGE)
+                .jsonPath("$.errors").exists()
+                .jsonPath("$.errors.name").isEqualTo("size must be between 1 and 255");
+    }
 
-        // assert
-        EntityModel<Problem> prob = om.readValue(mvcres.getResponse().getContentAsString(),
-                new TypeReference<EntityModel<Problem>>() {
+    @Test
+    void testGetRecipe() {
+        // setup
+        var recipe = createRecipeData();
+        ResponseSpec rsp = postRecipe(client, recipe);
+
+        // execute
+        rsp.expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$._links.self.href").value(v -> {
+                    var self = (String) v;
+                    // execute / assert
+                    BodyContentSpec spec = client.get().uri(self)
+                            .exchange().expectStatus().isOk()
+                            .expectBody();
+                    assertRecipeJsonPath(spec);
                 });
-        assertNotNull(prob);
-        var cont = prob.getContent();
-        assertNotNull(cont);
-        var title = cont.getTitle();
-        assertNotNull(title);
-        assertTrue(title.equals("Validation error"));
+    }
+
+    @Test
+    void testListRecipe() {
+        // setup
+        var recipe = createRecipeData();
+        ResponseSpec rsp = postRecipe(client, recipe);
+
+        // execute
+        rsp.expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$._links.ex:recipes.href").value(v -> {
+                    var self = (String) v;
+                    // execute / assert
+                    BodyContentSpec spec = client.get().uri(self)
+                            .exchange().expectStatus().isOk()
+                            .expectBody();
+                    spec.jsonPath("$._embedded").exists()
+                            .jsonPath("_links").exists()
+                            .jsonPath("$._links.self").exists()
+                            .jsonPath("$._embedded").exists()
+                            .jsonPath("$._embedded.ex:recipeList").isArray();
+                });
+    }
+
+    @Test
+    void testDeleteRecipe() {
+        // setup
+        var recipe = createRecipeData();
+        ResponseSpec rsp = postRecipe(client, recipe);
+
+        // execute
+        rsp.expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$._links.self.href").value(v -> {
+                    var self = (String) v;
+                    // execute / assert
+                    client.delete().uri(self)
+                            .exchange().expectStatus().isNoContent();
+                    client.get().uri(self)
+                            .exchange().expectStatus().isNotFound();
+                });
+    }
+
+    void assertRecipeJsonPath(BodyContentSpec spec) {
+        spec.jsonPath("$.publicId").exists()
+                .jsonPath("$.name").exists()
+                .jsonPath("$.description").exists()
+                .jsonPath("$.user").exists()
+                .jsonPath("$.ingredientQuantities").isArray()
+                .jsonPath("$.recipeInstructions").isArray()
+                .jsonPath("$._links.self").exists()
+                .jsonPath("$._links.ex:recipes").exists()
+                .jsonPath("$._links.ex:ingredientquantities").exists()
+                .jsonPath("$._links.ex:recipeinstructions").exists()
+                .jsonPath("$._links.curies").exists();
     }
 
     @Test
     void testCreateIngredientQuantity() {
         // setup
-        client = buildWebTestClient();
-        var recipe = new HashMap<String, Object>();
-        String name = "myrecipe";
-        recipe.put("name", name);
-        EntityModel<Recipe> recEM = postRecipe(client, recipe);
-        assertNotNull(recEM);
-        Link iqLink = recEM.getLink("ingredientquantities").orElseThrow(IllegalArgumentException::new);
-
         var ingredQuant = new HashMap<String, Object>();
         var ingr = ingrRepo.findAll().getFirst();
         var ut = unitRepo.findAll().getFirst();
         ingredQuant.put("ingredient", ingr.getPublicId());
         ingredQuant.put("quantity", 10);
         ingredQuant.put("unit", ut.getPublicId());
+        var recipe = createRecipeData();
+        ResponseSpec rsp = postRecipe(client, recipe);
 
         // execute
-        EntityModel<IngredientQuantity> iqEM = postSubEntity(client, iqLink.getHref(), ingredQuant)
-                .expectBody(new ParameterizedTypeReference<EntityModel<IngredientQuantity>>() {
-                })
-                .returnResult()
-                .getResponseBody();
+        rsp.expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$._links.ex:ingredientquantities.href").value(v -> {
+                    var link = (String) v;
+                    // execute / assert
+                    BodyContentSpec spec = client.post().uri(link)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.fromValue(ingredQuant))
+                            .exchange().expectStatus().isCreated()
+                            .expectBody();
+                    assertIngredientQuantityJsonPath(spec);
+                });
+    }
 
-        // assert
-        assertNotNull(iqEM);
-        var cont = iqEM.getContent();
-        assertNotNull(cont);
+    void assertIngredientQuantityJsonPath(BodyContentSpec spec) {
+        RecipeControllerFixture.assertIngredientQuantityJsonPath(spec);
+    }
+
+    @Test
+    void testCreateIngredientQuantity400() {
+        // setup
+        var ingredQuant = new HashMap<String, Object>();
+        ingredQuant.put("ingredient", "");
+        ingredQuant.put("quantity", null);
+        ingredQuant.put("unit", "");
+        var recipe = createRecipeData();
+        ResponseSpec rsp = postRecipe(client, recipe);
+
+        // execute
+        rsp.expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$._links.ex:ingredientquantities.href").value(v -> {
+                    var link = (String) v;
+                    // execute / assert
+                    client.post().uri(link)
+                            .body(BodyInserters.fromValue(ingredQuant))
+                            .exchange().expectStatus().is4xxClientError()
+                            .expectBody()
+                            .jsonPath("$.title").isEqualTo(VALIDATION_ERROR_MESSAGE)
+                            .jsonPath("$.errors").exists()
+                            .jsonPath("$.errors.ingredient").exists()
+                            .jsonPath("$.errors.quantity").exists()
+                            .jsonPath("$.errors.unit").exists();
+                });
     }
 
     @Test
     void testCreateRecipeInstruction() {
         // setup
-        client = buildWebTestClient();
-        var recipe = new HashMap<String, Object>();
-        String name = "myrecipe";
-        recipe.put("name", name);
-        EntityModel<Recipe> recEM = postRecipe(client, recipe);
-        assertNotNull(recEM);
-        Link iqLink = recEM.getLink("recipeinstructions").orElseThrow(IllegalArgumentException::new);
+        var recipe = createRecipeData();
+        ResponseSpec rsp = postRecipe(client, recipe);
         var recInstr = new HashMap<String, Object>();
         recInstr.put("description", "Do something");
 
         // execute
-        EntityModel<RecipeInstruction> iqEM = postSubEntity(client, iqLink.getHref(), recInstr)
-                .expectBody(new ParameterizedTypeReference<EntityModel<RecipeInstruction>>() {
-                })
-                .returnResult()
-                .getResponseBody();
-
-        // assert
-        assertNotNull(iqEM);
-        var cont = iqEM.getContent();
-        assertNotNull(cont);
+        rsp.expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$._links.ex:recipeinstructions.href").value(v -> {
+                    var link = (String) v;
+                    // execute / assert
+                    client.post().uri(link)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.fromValue(recInstr))
+                            .exchange().expectStatus().isCreated()
+                            .expectBody()
+                            .jsonPath("$.publicId").exists()
+                            .jsonPath("$.description").exists()
+                            .jsonPath("$._links.self").exists();
+                });
     }
 
-    RecipeController buildController() {
-        return new RecipeController(repo, assembler, ingrQRepo, ingrQAssembler, recInstrRepo, recInstrAssembler,
-                ingrRepo, unitRepo);
+    @Test
+    void testCreateRecipeInstruction400() {
+        // setup
+        var recipe = createRecipeData();
+        ResponseSpec rsp = postRecipe(client, recipe);
+        var recInstr = new HashMap<String, Object>();
+        recInstr.put("description", "");
+
+        // execute
+        rsp.expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$._links.ex:recipeinstructions.href").value(v -> {
+                    var link = (String) v;
+                    // execute / assert
+                    client.post().uri(link)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.fromValue(recInstr))
+                            .exchange().expectStatus().is4xxClientError()
+                            .expectBody()
+                            .jsonPath("$.title").isEqualTo(VALIDATION_ERROR_MESSAGE)
+                            .jsonPath("$.errors").exists()
+                            .jsonPath("$.errors.description").exists();
+                });
     }
 
-    WebTestClient buildWebTestClient() {
-        return WebTestClient
-                .bindToController(buildController())
-                .build();
+    Map<String, Object> createRecipeData() {
+        return RecipeControllerFixture.createRecipeData();
     }
 
-    EntityModel<Recipe> postRecipe(WebTestClient client, HashMap<String, Object> recipe) {
-        return client.post().uri(CONTROLLER_URL)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(recipe))
-                .exchange()
-                .expectBody(new ParameterizedTypeReference<EntityModel<Recipe>>() {
-                })
-                .returnResult()
-                .getResponseBody();
-    }
-
-    ResponseSpec postSubEntity(WebTestClient client, String url, HashMap<String, Object> data) {
-        return client.post().uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(data))
-                .exchange()
-                .expectStatus().isCreated();
+    ResponseSpec postRecipe(WebTestClient client, Map<String, Object> recipe) {
+        return RecipeControllerFixture.postRecipe(client, recipe);
     }
 }

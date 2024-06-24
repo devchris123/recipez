@@ -5,11 +5,15 @@ import java.math.BigDecimal;
 import com.cwunder.recipe._shared.AppEntity;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 public class IngredientQuantityWrite extends AppEntity {
     @NotBlank
     private String ingredient;
 
+    @NotNull
+    @Positive
     private BigDecimal quantity;
 
     @NotBlank

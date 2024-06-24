@@ -4,6 +4,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
+    container_name: test-client
     depends_on:
       recipe-app:
         condition: service_healthy
@@ -18,10 +19,10 @@ services:
     networks:
       - recipe-network-test
     healthcheck:
-      test: "curl -i localhost:8080/DOES_NOT_EXIST | grep 401 || exit 1"
+      test: curl --fail --silent localhost:8080/actuator/health | grep UP || exit 1
       interval: 10s
-      retries: 5
-      timeout: 30s
+      retries: 20
+      timeout: 200s
   recipe-db:
     networks:
       - recipe-network-test

@@ -5,6 +5,7 @@ import java.util.*;
 import com.cwunder.recipe._shared.AppEntity;
 import com.cwunder.recipe.ingredientquantity.IngredientQuantity;
 import com.cwunder.recipe.recipeinstruction.RecipeInstruction;
+import com.cwunder.recipe.user.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
@@ -20,13 +21,22 @@ public class Recipe extends AppEntity {
 
     private String description = "";
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @OneToMany(mappedBy = "recipe", targetEntity = IngredientQuantity.class)
-    private Set<IngredientQuantity> ingredientQuantities;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Transient
+    private String username;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @OneToMany(mappedBy = "recipe", targetEntity = RecipeInstruction.class)
-    private Set<RecipeInstruction> recipeInstructions;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user", nullable = true)
+    private User user;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @OneToMany(mappedBy = "recipe", targetEntity = IngredientQuantity.class, fetch = FetchType.EAGER)
+    private Set<IngredientQuantity> ingredientQuantities = new HashSet<>();
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @OneToMany(mappedBy = "recipe", targetEntity = RecipeInstruction.class, fetch = FetchType.EAGER)
+    private Set<RecipeInstruction> recipeInstructions = new HashSet<>();
 
     public Recipe() {
         initialize();
@@ -73,5 +83,21 @@ public class Recipe extends AppEntity {
     public String toString() {
         return "Recipe{" + "id=" + this.getId() + ", name='" + this.getName() + '\'' + ", description="
                 + this.getDescription() + "\'" + '}';
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

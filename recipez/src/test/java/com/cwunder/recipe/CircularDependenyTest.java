@@ -6,10 +6,10 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class RecipeApplicationTests {
+public class CircularDependenyTest {
 
     @Test
-    void contextLoads() {
+    public void givenCircularDependency_whenConstructorInjection_thenItFails() {
+        // Empty test; we just want the context to load
     }
-
 }

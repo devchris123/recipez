@@ -1,4 +1,4 @@
-package com.cwunder.recipe.ingredientquantity;
+package com.cwunder.recipe.recipeinstruction;
 
 // Java SE
 import java.util.*;
@@ -32,8 +32,6 @@ import com.cwunder.recipe._test.RecipeFixture;
 import com.cwunder.recipe._test.TestFixture;
 import com.cwunder.recipe._test.UserFixture;
 import com.cwunder.recipe._test.WithMockCustomUser;
-import com.cwunder.recipe.ingredient.IngredientRepository;
-import com.cwunder.recipe.unit.UnitRepository;
 import com.cwunder.recipe._test.RecipeControllerFixture;
 
 import com.jayway.jsonpath.JsonPath;
@@ -43,13 +41,7 @@ import com.jayway.jsonpath.JsonPath;
 @Transactional
 @WithMockCustomUser(username = "testuser")
 @ActiveProfiles("test")
-public class IngredientQuantityControllerTest {
-    // Repositories
-    @Autowired
-    private IngredientRepository ingrRepo;
-    @Autowired
-    private UnitRepository unitRepo;
-
+public class RecipeInstructionControllerTest {
     // Fixtures
     @Autowired
     private TestFixture testFixture;
@@ -59,7 +51,7 @@ public class IngredientQuantityControllerTest {
     private RecipeFixture recipeFixture;
 
     private WebTestClient recClient;
-    private WebTestClient ingrQuantClient;
+    private WebTestClient recInstrClient;
 
     @Autowired
     void setMockMvc(MockMvc mockMvc) {
@@ -67,7 +59,7 @@ public class IngredientQuantityControllerTest {
                 .defaultHeader("Accept", MediaTypes.HAL_JSON_VALUE)
                 .baseUrl("/recipes")
                 .build();
-        ingrQuantClient = MockMvcWebTestClient.bindTo(mockMvc)
+        recInstrClient = MockMvcWebTestClient.bindTo(mockMvc)
                 .defaultHeader("Accept", MediaTypes.HAL_JSON_VALUE)
                 .build();
     }
@@ -80,9 +72,9 @@ public class IngredientQuantityControllerTest {
     }
 
     @Test
-    void testGetIngredientQuantity() {
+    void testGetRecipeInstruction() {
         // setup
-        ResponseSpec rsp = postRecipeIngredientQuantity();
+        ResponseSpec rsp = postRecipeRecipeInstruction();
 
         // execute
         rsp.expectStatus().isCreated()
@@ -90,16 +82,16 @@ public class IngredientQuantityControllerTest {
                 .jsonPath("$._links.self.href").value(v -> {
                     var self = (String) v;
                     // execute / assert
-                    BodyContentSpec spec = ingrQuantClient.get().uri(self)
+                    BodyContentSpec spec = recInstrClient.get().uri(self)
                             .exchange().expectStatus().isOk().expectBody();
-                    assertIngredientQuantityJsonPath(spec);
+                    assertRecipeInstructionJsonPath(spec);
                 });
     }
 
     @Test
-    void testGetIngredientQuantity404() {
+    void testGetRecipeInstruction404() {
         // setup
-        ResponseSpec rsp = postRecipeIngredientQuantity();
+        ResponseSpec rsp = postRecipeRecipeInstruction();
 
         // execute
         rsp.expectStatus().isCreated()
@@ -108,17 +100,17 @@ public class IngredientQuantityControllerTest {
                     var self = (String) v;
                     // execute / assert
                     System.out.println(self);
-                    ingrQuantClient.delete().uri(self)
+                    recInstrClient.delete().uri(self)
                             .exchange().expectStatus().isNoContent();
-                    ingrQuantClient.get().uri(self)
+                    recInstrClient.get().uri(self)
                             .exchange().expectStatus().isNotFound();
                 });
     }
 
     @Test
-    void testUpdateIngredientQuantity() {
+    void testUpdateRecipeInstruction() {
         // setup
-        ResponseSpec rsp = postRecipeIngredientQuantity();
+        ResponseSpec rsp = postRecipeRecipeInstruction();
 
         // execute
         rsp.expectStatus().isCreated()
@@ -126,24 +118,20 @@ public class IngredientQuantityControllerTest {
                 .jsonPath("$._links.self.href").value(v -> {
                     var self = (String) v;
                     // execute / assert
-                    String res = new String(ingrQuantClient.get().uri(self)
+                    new String(recInstrClient.get().uri(self)
                             .exchange().expectStatus().isOk()
                             .expectBody().returnResult().getResponseBody());
                     var ingredQuant = new HashMap<String, Object>();
-                    String ingr = JsonPath.read(res, "$.ingredient.name");
-                    String unit = JsonPath.read(res, "$.unit.unit");
-                    ingredQuant.put("ingredient", ingr);
-                    ingredQuant.put("quantity", 20);
-                    ingredQuant.put("unit", unit);
-                    ingrQuantClient.put().uri(self).body(BodyInserters.fromValue(ingredQuant))
+                    ingredQuant.put("description", "new description");
+                    recInstrClient.put().uri(self).body(BodyInserters.fromValue(ingredQuant))
                             .exchange().expectStatus().isOk();
                 });
     }
 
     @Test
-    void testDeleteIngredientQuantity() {
+    void testDeleteRecipeInstruction() {
         // setup
-        ResponseSpec rsp = postRecipeIngredientQuantity();
+        ResponseSpec rsp = postRecipeRecipeInstruction();
 
         // execute
         rsp.expectStatus().isCreated()
@@ -151,18 +139,14 @@ public class IngredientQuantityControllerTest {
                 .jsonPath("$._links.self.href").value(v -> {
                     var link = (String) v;
                     // execute / assert
-                    ingrQuantClient.delete().uri(link).exchange().expectStatus().isNoContent();
+                    recInstrClient.delete().uri(link).exchange().expectStatus().isNoContent();
                 });
     }
 
-    ResponseSpec postRecipeIngredientQuantity() {
+    ResponseSpec postRecipeRecipeInstruction() {
         // setup
-        var ingredQuant = new HashMap<String, Object>();
-        var ingr = ingrRepo.findAll().getFirst();
-        var ut = unitRepo.findAll().getFirst();
-        ingredQuant.put("ingredient", ingr.getPublicId());
-        ingredQuant.put("quantity", 10);
-        ingredQuant.put("unit", ut.getPublicId());
+        var recInstr = new HashMap<String, Object>();
+        recInstr.put("description", "Do something");
         var recipe = createRecipeData();
         ResponseSpec rsp = postRecipe(recipe);
 
@@ -170,15 +154,16 @@ public class IngredientQuantityControllerTest {
         String res = new String(rsp.expectStatus().isCreated()
                 .expectBody()
                 .returnResult().getResponseBody());
-        String link = JsonPath.read(res, "$._links.ex:ingredientquantities.href");
-        return ingrQuantClient.post().uri(link)
+        // .jsonPath("$._links.ex:ingredientquantities.href");
+        String link = JsonPath.read(res, "$._links.ex:recipeinstructions.href");
+        return recInstrClient.post().uri(link)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(ingredQuant))
+                .body(BodyInserters.fromValue(recInstr))
                 .exchange();
     }
 
-    void assertIngredientQuantityJsonPath(BodyContentSpec spec) {
-        RecipeControllerFixture.assertIngredientQuantityJsonPath(spec);
+    void assertRecipeInstructionJsonPath(BodyContentSpec spec) {
+        spec.jsonPath("$.description").exists();
     }
 
     Map<String, Object> createRecipeData() {

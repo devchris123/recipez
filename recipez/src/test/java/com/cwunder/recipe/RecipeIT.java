@@ -5,28 +5,34 @@ import java.net.URI;
 import java.util.*;
 
 import org.junit.jupiter.api.*;
+import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.*;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.reactive.server.WebTestClient.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.cwunder.recipe._test.ITAppConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.http.*;
 
+@Import(ITAppConfig.class)
 public class RecipeIT {
     private static final String baseUrl = "http://recipe-app:8080";
+
     private static WebTestClient testClient;
     private static WebClient webClient;
 
     private static String RECIPE_ENDPOINT = "/recipes";
 
     @BeforeAll
-    static void setupWebCLient() {
-        testClient = WebTestClient.bindToServer().baseUrl(baseUrl).build();
-        webClient = WebClient.create(baseUrl);
+    static void setupAll() {
+        testClient = WebTestClient.bindToServer().baseUrl(baseUrl)
+                .defaultHeaders(header -> header.setBasicAuth("user", "pass")).build();
+        webClient = WebClient.builder().defaultHeaders(header -> header.setBasicAuth("user", "pass"))
+                .baseUrl(baseUrl).build();
     }
 
     @Test
@@ -47,6 +53,7 @@ public class RecipeIT {
         Map<String, String> recipe = new HashMap<String, String>();
         String name = "myrecipe";
         recipe.put("name", "myrecipe");
+        recipe.put("username", "user");
 
         // execute / assert
         BodyContentSpec bodySpec = testClient.post().uri(RECIPE_ENDPOINT)
@@ -65,6 +72,7 @@ public class RecipeIT {
         // setup
         Map<String, String> recipe = new HashMap<String, String>();
         recipe.put("name", "");
+        recipe.put("username", "user");
 
         // execute / assert
         testClient.post().uri(RECIPE_ENDPOINT)
@@ -85,6 +93,7 @@ public class RecipeIT {
         Map<String, String> recipe = new HashMap<String, String>();
         String name = "newname";
         recipe.put("name", "newname");
+        recipe.put("username", "user");
 
         // execute / assert
         BodyContentSpec bodySpec = testClient.put().uri(link)
@@ -139,6 +148,7 @@ public class RecipeIT {
         Map<String, String> recipe = new HashMap<String, String>();
         String name = "myrecipe";
         recipe.put("name", name);
+        recipe.put("username", "user");
 
         // execute / assert
         String recEM = webClient.post().uri(RECIPE_ENDPOINT)
