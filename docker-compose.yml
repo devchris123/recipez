@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   recipe-app:
     build:
@@ -18,10 +16,13 @@ services:
     environment:
       - DB_HOST=recipe-db
       - DB_PORT=3306
-      - DB_USER=recipeapp
+      - DB_USER=recipeappadmin
       - DB_NAME=recipedb
-      - DB_PASSWORD=b74z0lIXfM8Qh0wL
       - REL_BASE_URL=http://localhost:8080
+      - SPRING_CONFIG_LOCATION=classpath:application.yml,/run/secrets/.application.ssh-keys.yml,/run/secrets/.application.datasource.yml
+    secrets:
+      - .application.ssh-keys.yml
+      - .application.datasource.yml
 
   recipe-db:
     build:
@@ -53,3 +54,7 @@ secrets:
     file: db_password_root
   db_password:
     file: db_password
+  .application.ssh-keys.yml:
+    file: .application.ssh-keys.yml
+  .application.datasource.yml:
+    file: .application.datasource.yml

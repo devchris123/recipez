@@ -64,11 +64,11 @@ jobs:
         with:
           namespace: default
           manifests: |
-            db-data-persistentvolumeclaim.yaml
-            recipe-app-deployment.yaml
-            recipe-app-service.yaml
-            recipe-db-deployment.yaml
-            recipe-db-service.yaml
+            recipe-app.deployment.yml
+            recipe-app.service.yml
+            recipe-db.deployment.yml
+            recipe-db.service.yml
+            recipe-db.persistentvolumeclaim.yml
           images: |
             chris132/recipe-app:${{ github.sha }}
             chris132/recipe-db:${{ github.sha }}

@@ -30,18 +30,34 @@ spec:
               value: recipe-db
             - name: DB_NAME
               value: recipedb
-            - name: DB_PASSWORD
-              value: b74z0lIXfM8Qh0wL
             - name: DB_PORT
               value: "3306"
             - name: DB_USER
               value: recipeapp
             - name: REL_BASE_URL
               value: http://localhost:8080
+            - name: SPRING_CONFIG_LOCATION
+              value: classpath:application.yml,/run/dockersecrets/.application.ssh-keys.yml,/run/dockersecrets/.application.datasource.yml
           image: chris132/recipe-app:latest
           name: recipe-app
           ports:
             - containerPort: 8080
           resources: {}
+          volumeMounts:
+            - mountPath: /run/dockersecrets/
+              name: jwt-secrets
       restartPolicy: Always
+      volumes:
+        - name: jwt-secrets
+          secret:
+            items:
+              - key: jwt_keys
+                path: .application.ssh-keys.yml
+            secretName: jwt-secrets
+        - name: app-secrets
+          secret:
+            items:
+              - key: applicationdb
+                path: .application.datasource.yml
+            secretName: app-secrets
 status: {}

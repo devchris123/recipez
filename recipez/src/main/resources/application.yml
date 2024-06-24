@@ -1,4 +1,16 @@
 spring:
-  devtools:
-    livereload:
-      enabled: true
+  application:
+    name: recipe
+  sql:
+    init.mode: always
+  datasource:
+    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME}
+    username: ${DB_USER}
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate.naming.physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+  devtools.livereload.enabled: true
+
+  jwt.private.key: optional:classpath:pkcs8.id_rsa
+  jwt.public.key: optional:classpath:id_rsa.pem

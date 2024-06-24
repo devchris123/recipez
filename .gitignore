@@ -17,6 +17,16 @@ cloud-init*
 # worker ssh keys
 .ssh*
 
+# JWT RSA keys
+id_rsa*
+*id_rsa
+*secret.yaml
+*secret.yml
+
+# Ignore .application files
+# They contain spring secrets
+.application*
+
 # Terraform
 # Local .terraform directories
 **/.terraform/*

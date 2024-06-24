@@ -1,7 +1,7 @@
 FROM mariadb:11.3
 
 # Make sure the script runs on first startup
-COPY recipes.sql /docker-entrypoint-initdb.d/
+COPY ./sql_migrations/*.sql /docker-entrypoint-initdb.d/
 
 # Make sure the script runs on every startup
 COPY mariadb.cnf /etc/mysql/conf.d/

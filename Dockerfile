@@ -14,4 +14,7 @@ RUN mvn dependency:resolve
 # Finally copy ITs as a last layer
 COPY ./recipez/src /recipes/src
 
+# For testing copy the sql script into the resources directory
+COPY ./sql_migrations/0000_recipes.sql ./recipes/src/main/resources
+
 CMD ["mvn", "spring-boot:run"]

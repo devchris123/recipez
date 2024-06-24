@@ -46,7 +46,7 @@ resource "hcloud_server" "dev-main-node" {
     # Here the worker nodes will use 10.0.1.1 to communicate with the main node
     ip = "10.0.1.1"
   }
-  user_data = file("${path.module}/cloud-init.dev.yaml")
+  user_data = file("${path.module}/cloud-init.dev.yml")
 
   # If we don't specify this, Terraform will create the resources in parallel
   # We want this node to be created after the private network is created
@@ -65,7 +65,7 @@ resource "hcloud_server" "dev-worker-node-1" {
   network {
     network_id = hcloud_network.dev_private_network.id
   }
-  user_data = file("${path.module}/cloud-init-worker.dev.yaml")
+  user_data = file("${path.module}/cloud-init-worker.dev.yml")
 
   # add the main node as a dependency
   depends_on = [hcloud_network_subnet.dev_private_network_subnet, hcloud_server.dev-main-node]

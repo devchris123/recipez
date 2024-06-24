@@ -1,2 +1,2 @@
 [mariadb]
-init-file=/docker-entrypoint-initdb.d/recipes.sql
+init-file=/docker-entrypoint-initdb.d/0000_recipes.sql

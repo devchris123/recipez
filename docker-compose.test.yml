@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   test-client:
     command: ["mvn", "verify"]
@@ -11,11 +9,16 @@ services:
         condition: service_healthy
     networks:
       - recipe-network-test
+    environment:
+      - SPRING_CONFIG_LOCATION=classpath:application.yml,/run/secrets/.application.ssh-keys.yml
+    secrets:
+      - .application.ssh-keys.yml
+
   recipe-app:
     networks:
       - recipe-network-test
     healthcheck:
-      test: "curl localhost:8080/DOES_NOT_EXIST | grep status || exit 1"
+      test: "curl -i localhost:8080/DOES_NOT_EXIST | grep 401 || exit 1"
       interval: 10s
       retries: 5
       timeout: 30s

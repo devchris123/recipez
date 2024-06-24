@@ -3,10 +3,10 @@ run-name: ${{ github.actor }}
 
 on:
   pull_request:
-    types: [opened, reopened, edited]
+    types: [opened, synchronize, reopened, edited]
     branches:
       - "feature/**"
-      - "!main"
+      - "main"
     paths:
       - "src/**"
       - ".github/workflows/github-actions-ci.yml"
@@ -31,6 +31,11 @@ jobs:
           touch db_password_root
           echo "test_db_password" >> db_password
           echo "test_db_password_root" >> db_password_root
+        shell: bash
+      - name: Create secrets files
+        run: |
+          echo ${{ secrets.APP_DATASOURCE_SECRET }} >> .application.datasource.yml
+          echo ${{ secrets.APP_JWT_SSH_KEYS_SECRET }} >> .application.ssh-keys.yml
         shell: bash
       - name: Run tests
         run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up --build --abort-on-container-exit
