@@ -23,6 +23,9 @@ id_rsa*
 *secret.yaml
 *secret.yml
 
+# hcloud_token
+k3s.worker.config.yml
+
 # Ignore .application files
 # They contain spring secrets
 .application*
