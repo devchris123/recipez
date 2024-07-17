@@ -50,7 +50,4 @@ spec:
               - key: db_password_root
                 path: db_password_root
             secretName: db-secrets
-        - name: db-data
-          persistentVolumeClaim:
-            claimName: db-data
 status: {}
