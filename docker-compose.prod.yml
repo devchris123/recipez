@@ -1,0 +1,19 @@
+services:
+  recipe-app:
+    build:
+      dockerfile: Dockerfile_Prod
+      context: .
+    networks:
+      - recipe-network-prod
+
+  recipe-db:
+    volumes:
+      - db-data-prod:/var/lib/mysql
+    networks:
+      - recipe-network-prod
+
+volumes:
+  db-data-prod:
+
+networks:
+  recipe-network-prod:

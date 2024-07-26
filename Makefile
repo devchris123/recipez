@@ -2,6 +2,9 @@
 run-local:
 	docker-compose -f docker-compose.yml -f docker-compose.local.yml up --build
 
+run-prod:
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+
 down-local:
 	docker-compose -f docker-compose.yml -f docker-compose.local.yml down
 
