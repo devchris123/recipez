@@ -47,4 +47,4 @@ jobs:
           echo "${{ secrets.APP_JWT_SSH_KEYS_SECRET }}" >> .application.ssh-keys.yml
         shell: bash
       - name: Run tests
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up --build --abort-on-container-exit
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml up --build --abort-on-container-exit
