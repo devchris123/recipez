@@ -1,0 +1,20 @@
+controller:
+  service:
+    annotations:
+      load-balancer.hetzner.cloud/location: fsn1
+      load-balancer.hetzner.cloud/name: "ingress-nginx-lb"
+      load-balancer.hetzner.cloud/ipv4: "167.235.216.209"
+      load-balancer.hetzner.cloud/protocol: "https"
+      load-balancer.hetzner.cloud/certificate-type: "uploaded"
+      load-balancer.hetzner.cloud/http-certificates: managed-certificate-2
+    externalTrafficPolicy: "Local"
+    ports:
+      # -- Port the external HTTP listener is published with.
+      http: 80
+      # -- Port the external HTTPS listener is published with.
+      https: 443
+    targetPorts:
+      # -- Port of the ingress controller the external HTTP listener is mapped to.
+      http: http
+      # -- Port of the ingress controller the external HTTPS listener is mapped to.
+      https: http

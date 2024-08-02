@@ -4,27 +4,15 @@ metadata:
   annotations:
     kompose.cmd: kompose -f docker-compose.yml -f docker-compose.local.yml convert
     kompose.version: 1.26.0 (40646f47)
-    load-balancer.hetzner.cloud/location: fsn1
-    load-balancer.hetzner.cloud/name: "recipe-app-lb"
-    load-balancer.hetzner.cloud/ipv4: "128.140.29.28"
-    load-balancer.hetzner.cloud/protocol: "https"
-    load-balancer.hetzner.cloud/certificate-type: "uploaded"
-    load-balancer.hetzner.cloud/http-certificates: managed-certificate-1
-    load-balancer.hetzner.cloud/http-redirect-http: "true"
-    load-balancer.hetzner.cloud/health-check-protocol: http
-    load-balancer.hetzner.cloud/health-check-http-path: "/actuator/health"
-    load-balancer.hetzner.cloud/http-status-codes: "2??,3??"
   creationTimestamp: null
   labels:
     io.kompose.service: recipe-app
   name: recipe-app
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
-    - name: "https"
-      port: 443
+    - name: "http"
+      port: 80
       targetPort: 8080
   selector:
     io.kompose.service: recipe-app
-status:
-  loadBalancer: {}
