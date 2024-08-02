@@ -1,0 +1,49 @@
+controller:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  volumes:
+    extra:
+      - name: logs
+        hostPath:
+          path: /var/log/kubernetes/audit/
+
+alloy:
+  configMap:
+    content: |-
+      // Write alloy config here
+      logging {
+        level = "debug"
+        format = "logfmt"
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki-gateway:8080/loki/api/v1/push"
+          tenant_id = "1"
+        }
+      }
+
+      local.file_match "k8s_api_logs" {
+        path_targets = [{
+          __path__ = "/var/log/kubernetes/audit/*.log",
+          job = "k8s_api_logs",
+          node_name = env("HOSTNAME"),
+        }]
+      }
+
+      loki.source.file "k8s_api_logs" {
+        targets = local.file_match.k8s_api_logs.targets
+        forward_to = [loki.write.default.receiver]
+      }
+
+  mounts:
+    extra:
+      - name: logs
+        readOnly: true
+        mountPath: /var/log/kubernetes/audit/
