@@ -5,6 +5,16 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
+    - host: recipeez.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: recipe-website
+                port:
+                  number: 80
     - host: api.recipeez.org
       http:
         paths:

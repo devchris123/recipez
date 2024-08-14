@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recipe-website
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recipe-website
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: recipe-website
+    spec:
+      containers:
+        - image: chris132/recipe-website:latest
+          imagePullPolicy: Always
+          name: recipe-website
+          ports:
+            - containerPort: 80
+          resources: {}
+      restartPolicy: Always
+status: {}
