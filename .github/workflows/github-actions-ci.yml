@@ -8,14 +8,13 @@ on:
       - "feature/**"
       - "main"
     paths:
-      - "src/**"
+      - "recipez/**"
+      - "sql_migrations/**"
       - ".github/workflows/github-actions-ci.yml"
       - "docker-compose.yml"
       - "docker-compose.test.yml"
       - "Dockerfile_DB"
       - "Dockerfile"
-      - "recipes.sql"
-      - "pom.xml"
       - "mariadb.cnf"
   workflow_call:
     secrets:
