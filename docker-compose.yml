@@ -11,8 +11,8 @@ services:
       - 8080:8080
     volumes:
       - type: bind
-        source: ./recipez/src
-        target: /recipe/src
+        source: ./recipez
+        target: /recipes
     environment:
       - DB_HOST=recipe-db
       - DB_PORT=3306

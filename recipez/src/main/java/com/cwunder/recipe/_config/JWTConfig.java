@@ -53,6 +53,7 @@ public class JWTConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").anonymous()
+                        .requestMatchers(HttpMethod.GET, "/users").anonymous()
                         .anyRequest().authenticated())
                 .csrf((csrf) -> csrf.disable())
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(

@@ -26,6 +26,7 @@ public class AppTestConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").anonymous()
+                        .requestMatchers(HttpMethod.GET, "/users").anonymous()
                         .anyRequest().authenticated())
                 .csrf((csrf) -> csrf.disable())
                 .httpBasic(withDefaults());
