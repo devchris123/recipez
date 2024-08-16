@@ -145,3 +145,54 @@ INSERT
     IGNORE INTO Authority (user, authority)
 values
     (1, 'ROLE_USER');
+
+
+-- Migrate ingredient and unit from a foreign key constraint to a normal string
+-- I made this decision to make it easier to add any unit or ingredient
+-- Reason: since we do not want to calculate with units or control the number of untis
+-- we do not need a constraint here.
+-- We do not have a huge indredient database and it is unecessary to keep a foreign key constraint this way.
+DELIMITER //
+CREATE PROCEDURE IF NOT EXISTS migrate_ingredient_unit_0001 ()
+    MODIFIES SQL DATA
+    BEGIN
+    ALTER TABLE
+        IngredientQuantity
+    ADD
+        COLUMN IF NOT EXISTS _ingredient VARCHAR(255) NOT NULL DEFAULT "",
+    ADD
+        COLUMN IF NOT EXISTS _unit VARCHAR(255) NOT NULL DEFAULT "";
+
+    UPDATE IGNORE IngredientQuantity as iq
+        INNER JOIN Unit as u ON iq.unit=u.id
+        INNER JOIN Ingredient as i ON iq.ingredient=i.id
+        SET _ingredient=i.name, _unit=u.unit;
+
+    ALTER TABLE
+    IngredientQuantity
+    DROP CONSTRAINT IF EXISTS `ingredientquantity_fk_ingredient`;
+    ALTER TABLE
+    IngredientQuantity
+    DROP CONSTRAINT IF EXISTS `ingredientquantity_fk_unit`;
+
+    ALTER TABLE
+        IngredientQuantity
+    DROP
+        COLUMN IF EXISTS ingredient,
+    DROP
+        COLUMN IF EXISTS unit;
+
+    ALTER TABLE
+        IngredientQuantity
+    RENAME
+        COLUMN IF EXISTS _ingredient TO ingredient,
+    RENAME
+        COLUMN IF EXISTS _unit TO unit;
+    END
+//
+DELIMITER ;
+    
+CREATE EVENT IF NOT EXISTS `migrate_ingredient_unit_0001`
+ON SCHEDULE AT CURRENT_TIMESTAMP
+ON COMPLETION PRESERVE
+DO CALL migrate_ingredient_unit_0001();

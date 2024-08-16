@@ -1,4 +1,7 @@
 services:
+  recipe-next-app:
+    networks:
+      - recipe-network
   recipe-app:
     networks:
       - recipe-network

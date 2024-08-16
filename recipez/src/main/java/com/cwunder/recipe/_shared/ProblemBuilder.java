@@ -1,6 +1,7 @@
 package com.cwunder.recipe._shared;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.mediatype.problem.Problem;
@@ -24,5 +25,19 @@ public class ProblemBuilder {
                 .status(HttpStatus.BAD_REQUEST)
                 .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
                 .body(Problem.create().withTitle("Validation error").withProperties(problemProps));
+    }
+
+    public static ResponseEntity<Problem> buildProblem(String error) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create().withTitle(error));
+    }
+
+    public static ResponseEntity<Problem> buildProblem(String errorTitle, Map<String, String> errors) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create().withTitle(errorTitle).withProperties(errors));
     }
 }

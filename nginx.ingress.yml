@@ -15,6 +15,16 @@ spec:
                 name: recipe-website
                 port:
                   number: 80
+    - host: app.recipeez.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: recipe-next-app
+                port:
+                  number: 80
     - host: api.recipeez.org
       http:
         paths:

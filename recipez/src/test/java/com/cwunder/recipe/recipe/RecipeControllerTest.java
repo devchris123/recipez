@@ -36,8 +36,6 @@ import com.cwunder.recipe._test.RecipeFixture;
 import com.cwunder.recipe._test.TestFixture;
 import com.cwunder.recipe._test.UserFixture;
 import com.cwunder.recipe._test.WithMockCustomUser;
-import com.cwunder.recipe.ingredient.IngredientRepository;
-import com.cwunder.recipe.unit.UnitRepository;
 
 // Other
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,12 +46,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @WithMockCustomUser(username = "testuser")
 @ActiveProfiles("test")
 public class RecipeControllerTest {
-    @Autowired
-    private IngredientRepository ingrRepo;
-
-    @Autowired
-    private UnitRepository unitRepo;
-
     private WebTestClient client;
 
     private final String CONTROLLER_URL = "/recipes";
@@ -199,11 +191,9 @@ public class RecipeControllerTest {
     void testCreateIngredientQuantity() {
         // setup
         var ingredQuant = new HashMap<String, Object>();
-        var ingr = ingrRepo.findAll().getFirst();
-        var ut = unitRepo.findAll().getFirst();
-        ingredQuant.put("ingredient", ingr.getPublicId());
+        ingredQuant.put("ingredient", "cheese");
         ingredQuant.put("quantity", 10);
-        ingredQuant.put("unit", ut.getPublicId());
+        ingredQuant.put("unit", "kg");
         var recipe = createRecipeData();
         ResponseSpec rsp = postRecipe(client, recipe);
 

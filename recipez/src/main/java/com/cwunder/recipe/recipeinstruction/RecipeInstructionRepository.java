@@ -3,7 +3,10 @@ package com.cwunder.recipe.recipeinstruction;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cwunder.recipe._shared.AppEntityRepository;
 
@@ -19,6 +22,7 @@ public interface RecipeInstructionRepository
     @Query(selectByUserAndPublicId)
     Optional<RecipeInstruction> findByPublicId(String publicId);
 
+    @Transactional
     @Modifying
     @Query(deleteByUserAndPublicId)
     void deleteByPublicId(String publicId);

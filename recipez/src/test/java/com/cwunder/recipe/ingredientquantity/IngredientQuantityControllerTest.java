@@ -32,8 +32,6 @@ import com.cwunder.recipe._test.RecipeFixture;
 import com.cwunder.recipe._test.TestFixture;
 import com.cwunder.recipe._test.UserFixture;
 import com.cwunder.recipe._test.WithMockCustomUser;
-import com.cwunder.recipe.ingredient.IngredientRepository;
-import com.cwunder.recipe.unit.UnitRepository;
 import com.cwunder.recipe._test.RecipeControllerFixture;
 
 import com.jayway.jsonpath.JsonPath;
@@ -44,12 +42,6 @@ import com.jayway.jsonpath.JsonPath;
 @WithMockCustomUser(username = "testuser")
 @ActiveProfiles("test")
 public class IngredientQuantityControllerTest {
-    // Repositories
-    @Autowired
-    private IngredientRepository ingrRepo;
-    @Autowired
-    private UnitRepository unitRepo;
-
     // Fixtures
     @Autowired
     private TestFixture testFixture;
@@ -129,8 +121,8 @@ public class IngredientQuantityControllerTest {
                             .exchange().expectStatus().isOk()
                             .expectBody().returnResult().getResponseBody());
                     var ingredQuant = new HashMap<String, Object>();
-                    String ingr = JsonPath.read(res, "$.ingredient.name");
-                    String unit = JsonPath.read(res, "$.unit.unit");
+                    String ingr = JsonPath.read(res, "$.ingredient");
+                    String unit = JsonPath.read(res, "$.unit");
                     ingredQuant.put("ingredient", ingr);
                     ingredQuant.put("quantity", 20);
                     ingredQuant.put("unit", unit);
@@ -157,11 +149,9 @@ public class IngredientQuantityControllerTest {
     ResponseSpec postRecipeIngredientQuantity() {
         // setup
         var ingredQuant = new HashMap<String, Object>();
-        var ingr = ingrRepo.findAll().getFirst();
-        var ut = unitRepo.findAll().getFirst();
-        ingredQuant.put("ingredient", ingr.getPublicId());
+        ingredQuant.put("ingredient", "cheese");
         ingredQuant.put("quantity", 10);
-        ingredQuant.put("unit", ut.getPublicId());
+        ingredQuant.put("unit", "kg");
         var recipe = createRecipeData();
         ResponseSpec rsp = postRecipe(recipe);
 

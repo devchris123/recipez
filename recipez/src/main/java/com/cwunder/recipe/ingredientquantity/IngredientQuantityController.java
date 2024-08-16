@@ -1,46 +1,38 @@
 package com.cwunder.recipe.ingredientquantity;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
-// Spring
-import org.springframework.web.bind.annotation.*;
-
-import com.cwunder.recipe._shared.NotFoundException;
-import com.cwunder.recipe.ingredient.Ingredient;
-import com.cwunder.recipe.ingredient.IngredientRepository;
-import com.cwunder.recipe.unit.Unit;
-import com.cwunder.recipe.unit.UnitRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.*;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.MediaTypes;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+import com.cwunder.recipe._shared.NotFoundException;
 
-// Jakarta
 import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/ingredientquantities")
 public class IngredientQuantityController {
-    @Autowired
-    private IngredientRepository ingrRepo;
-
-    @Autowired
-    private UnitRepository unitRepo;
 
     private final IngredientQuantityRepository repo;
     private final IngredientQuantityModelAssembler assembler;
 
-    IngredientQuantityController(IngredientQuantityRepository repo, IngredientQuantityModelAssembler assembler,
-            IngredientRepository ingrRepo, UnitRepository unitRepo) {
+    IngredientQuantityController(IngredientQuantityRepository repo, IngredientQuantityModelAssembler assembler) {
         this.repo = repo;
         this.assembler = assembler;
-        this.ingrRepo = ingrRepo;
-        this.unitRepo = unitRepo;
     }
 
     @GetMapping(produces = { MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE,
@@ -63,18 +55,12 @@ public class IngredientQuantityController {
     @PutMapping("/{id}")
     public @ResponseBody ResponseEntity<?> updateIngredientQuantity(
             @Valid @RequestBody IngredientQuantityWrite newIngredientQuantityData, @PathVariable String id) {
-        Ingredient ingr = ingrRepo.findByPublicId(newIngredientQuantityData.getIngredient())
-                .or(() -> ingrRepo.findByName(newIngredientQuantityData.getIngredient()))
-                .orElseThrow(() -> generateNotFoundException("Ingredient"));
-        Unit ut = unitRepo.findByPublicId(newIngredientQuantityData.getUnit())
-                .or(() -> unitRepo.findByUnit(newIngredientQuantityData.getUnit()))
-                .orElseThrow(() -> generateNotFoundException("Unit"));
         IngredientQuantity rec = repo.findByPublicId(id)
                 .map(
                         recipe -> {
-                            recipe.setIngredient(ingr);
+                            recipe.setIngredient(newIngredientQuantityData.getIngredient());
                             recipe.setQuantity(newIngredientQuantityData.getQuantity());
-                            recipe.setUnit(ut);
+                            recipe.setUnit(newIngredientQuantityData.getUnit());
                             return repo.save(recipe);
                         })
                 .orElseThrow(this::generateNotFoundException);
@@ -89,9 +75,5 @@ public class IngredientQuantityController {
 
     private NotFoundException generateNotFoundException() {
         return new NotFoundException("IngredientQuantity");
-    }
-
-    private NotFoundException generateNotFoundException(String entity) {
-        return new NotFoundException(entity);
     }
 }

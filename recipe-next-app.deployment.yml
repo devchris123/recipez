@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: recipe-next-app
+  name: recipe-next-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recipe-next-app
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: recipe-next-app
+    spec:
+      containers:
+        - env:
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nextauth-secret
+                  key: NEXT_AUTH_SECRET
+            - name: NEXTAUTH_URL
+              value: https://app.recipeez.org
+            - name: NEXTAUTH_URL_INTERNAL
+              value: http://recipe-next-app
+            - name: API_RECIPEEZ_ORIGIN
+              value: http://recipe-app
+          image: chris132/recipe-next-app:latest
+          imagePullPolicy: Always
+          name: recipe-app
+          ports:
+            - containerPort: 3000
+          resources: {}
+      restartPolicy: Always
+status: {}

@@ -1,6 +1,7 @@
 package com.cwunder.recipe.recipe;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.cwunder.recipe._shared.AppEntity;
 import com.cwunder.recipe.ingredientquantity.IngredientQuantity;
@@ -8,7 +9,13 @@ import com.cwunder.recipe.recipeinstruction.RecipeInstruction;
 import com.cwunder.recipe.user.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -19,8 +26,10 @@ public class Recipe extends AppEntity {
     @Size(min = 1, max = 255)
     private String name;
 
+    @Size(max = 65535)
     private String description = "";
 
+    @NotNull
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Transient
     private String username;

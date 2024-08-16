@@ -1,5 +1,7 @@
 package com.cwunder.recipe.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.NotBlank;
 
 public class CaptchaData {
@@ -10,6 +12,7 @@ public class CaptchaData {
 
     private String hostname;
 
+    @JsonProperty("error-codes")
     private String[] errorCodes;
 
     public boolean isSuccess() {
