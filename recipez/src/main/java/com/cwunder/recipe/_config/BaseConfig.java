@@ -3,23 +3,18 @@ package com.cwunder.recipe._config;
 // Java SE
 import javax.sql.DataSource;
 
-// Annotations
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.annotation.Autowired;
-
-// Hateoas
+import org.springframework.hateoas.UriTemplate;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.mediatype.hal.CurieProvider;
 import org.springframework.hateoas.mediatype.hal.DefaultCurieProvider;
-import org.springframework.hateoas.UriTemplate;
-
-// Spring Security
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.client.RestTemplate;
 
-// Recipe
 import com.cwunder.recipe.user.CustomUserDetailsService;
 
 @Configuration
@@ -47,4 +42,8 @@ public class BaseConfig {
         return new BCryptPasswordEncoder();
     }
 
+    @Bean
+    public RestTemplate getRestTemplate() {
+        return new RestTemplate();
+    }
 }

@@ -1,11 +1,28 @@
 package com.cwunder.recipe.user;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.core.MethodParameter;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import org.springframework.hateoas.*;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.MultiValueMap;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.SmartValidator;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.client.RestTemplate;
 
 import com.cwunder.recipe._shared.ExistsException;
 import com.cwunder.recipe._shared.NotFoundException;
@@ -22,16 +39,76 @@ public class UserController {
 
     private final PasswordEncoder pwEnc;
 
+    private final RestTemplate restTemplate;
+
+    private final String CAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify?secret={secret}&response={response}";
+    private final String CAPTCHA_SECRET_KEY = "";
+
+    private final SmartValidator validator;
+
     UserController(UserRepository repo, UserModelAssembler assembler, AuthorityRepository authRepo,
-            PasswordEncoder pwEnc) {
+            PasswordEncoder pwEnc, RestTemplate restTemplate, SmartValidator validator) {
         this.repo = repo;
         this.assembler = assembler;
         this.authRepo = authRepo;
         this.pwEnc = pwEnc;
+        this.restTemplate = restTemplate;
+        this.validator = validator;
     }
 
-    @PostMapping()
-    public @ResponseBody ResponseEntity<?> createUser(@Valid @RequestBody User newUser) {
+    @GetMapping()
+    public String getUserForm() {
+        return "userform";
+    }
+
+    @PostMapping(consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public @ResponseBody ResponseEntity<?> createUser(@RequestBody MultiValueMap<String, String> newUserData)
+            throws Exception {
+        // validate form body
+        var userFormData = validateUserFormData(newUserData);
+        // validate captcha
+        validateCaptcha(userFormData);
+        // create user
+        var newUser = doCreateUser(userFormData);
+        // build response
+        EntityModel<User> user = assembler.toModel(newUser);
+        return ResponseEntity.created(user.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(user);
+    }
+
+    private UserFormData validateUserFormData(MultiValueMap<String, String> newUserData)
+            throws MethodArgumentNotValidException, NoSuchMethodException, SecurityException {
+        var userFormData = parseUserFormData(newUserData);
+        var result = new BeanPropertyBindingResult(userFormData, "UserData");
+        validator.validate(userFormData, result);
+        if (result.hasErrors()) {
+            throw new MethodArgumentNotValidException(new MethodParameter(
+                    this.getClass().getDeclaredMethod("createUser", UserController.class), 0), result);
+        }
+        return userFormData;
+    }
+
+    private UserFormData parseUserFormData(MultiValueMap<String, String> userData) {
+        var username = userData.getFirst("username");
+        var password = userData.getFirst("password");
+        var gRecaptchaResponse = userData.getFirst("g-recaptcha-response");
+        return new UserFormData(username, password, gRecaptchaResponse);
+    }
+
+    private void validateCaptcha(UserFormData formData) {
+        Map<String, String> uriVariables = new HashMap<>();
+        uriVariables.put("secret", CAPTCHA_SECRET_KEY);
+        uriVariables.put("response", formData.getGrecaptchaResponse());
+        CaptchaData resp = restTemplate.postForObject(CAPTCHA_VERIFY_URL, null, CaptchaData.class, uriVariables);
+        if (resp == null) {
+            throw new RuntimeException("Captcha not successfull");
+        }
+        if (!resp.isSuccess()) {
+            throw new IllegalArgumentException("Captcha not successfull");
+        }
+    }
+
+    private User doCreateUser(UserFormData userFormData) {
+        var newUser = new User(userFormData.getUsername(), userFormData.getPassword(), true);
         // encode password
         if (repo.existsByUsername(newUser.getUsername())) {
             throw generateExistsException();
@@ -42,8 +119,7 @@ public class UserController {
         auth.setUser(created);
         auth.setAuthority("ROLE_USER");
         authRepo.save(auth);
-        EntityModel<User> user = assembler.toModel(newUser);
-        return ResponseEntity.created(user.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(user);
+        return newUser;
     }
 
     @GetMapping("/{id}")
