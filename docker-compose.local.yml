@@ -1,7 +1,21 @@
 services:
   recipe-next-app:
+    build:
+      dockerfile: Dockerfile
+      context: ./web-app
+    container_name: recipe-next-app
+    ports:
+      - 3000:3000
+    volumes:
+      - type: bind
+        source: ./web-app/recipeez
+        target: /recipeez
+    environment:
+      - NEXTAUTH_SECRET=say_lalisa_love_me_lalisa_love_me_hey
+      - API_RECIPEEZ_ORIGIN=http://recipe-app:8080
     networks:
       - recipe-network
+
   recipe-app:
     networks:
       - recipe-network
