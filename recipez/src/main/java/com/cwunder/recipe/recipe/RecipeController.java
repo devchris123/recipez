@@ -1,14 +1,27 @@
 package com.cwunder.recipe.recipe;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
-// Spring
-import org.springframework.web.bind.annotation.*;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.MediaTypes;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.cwunder.recipe._shared.NotFoundException;
-import com.cwunder.recipe.ingredient.Ingredient;
-import com.cwunder.recipe.ingredient.IngredientRepository;
 import com.cwunder.recipe.ingredientquantity.IngredientQuantity;
 import com.cwunder.recipe.ingredientquantity.IngredientQuantityModelAssembler;
 import com.cwunder.recipe.ingredientquantity.IngredientQuantityRepository;
@@ -17,19 +30,9 @@ import com.cwunder.recipe.recipeinstruction.RecipeInstruction;
 import com.cwunder.recipe.recipeinstruction.RecipeInstructionModelAssembler;
 import com.cwunder.recipe.recipeinstruction.RecipeInstructionRepository;
 import com.cwunder.recipe.recipeinstruction.RecipeInstructionWrite;
-import com.cwunder.recipe.unit.Unit;
-import com.cwunder.recipe.unit.UnitRepository;
 import com.cwunder.recipe.user.User;
 import com.cwunder.recipe.user.UserRepository;
 
-import org.springframework.hateoas.*;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
-
-// Jakarta
 import jakarta.validation.Valid;
 
 @Controller
@@ -38,9 +41,6 @@ public class RecipeController {
 
     private final RecipeRepository repo;
     private final RecipeModelAssembler assembler;
-
-    private final IngredientRepository ingrRepo;
-    private final UnitRepository unitRepo;
 
     private final IngredientQuantityRepository ingrQRepo;
     private final IngredientQuantityModelAssembler ingrQAssembler;
@@ -52,7 +52,7 @@ public class RecipeController {
 
     RecipeController(RecipeRepository repo, RecipeModelAssembler assembler, IngredientQuantityRepository ingrQRepo,
             IngredientQuantityModelAssembler ingrQAssembler, RecipeInstructionRepository recInstrRepo,
-            RecipeInstructionModelAssembler recInstrAssembler, IngredientRepository ingrRepo, UnitRepository unitRepo,
+            RecipeInstructionModelAssembler recInstrAssembler,
             UserRepository userRepo) {
         this.repo = repo;
         this.assembler = assembler;
@@ -60,8 +60,6 @@ public class RecipeController {
         this.ingrQAssembler = ingrQAssembler;
         this.recInstrRepo = recInstrRepo;
         this.recInstrAssembler = recInstrAssembler;
-        this.ingrRepo = ingrRepo;
-        this.unitRepo = unitRepo;
         this.userRepo = userRepo;
     }
 
@@ -84,7 +82,8 @@ public class RecipeController {
 
     @PostMapping()
     public @ResponseBody ResponseEntity<?> createRecipe(@Valid @RequestBody Recipe newRecipe) {
-        User user = userRepo.findByUsernameAuth(newRecipe.getUsername()).orElseThrow(this::generateNotFoundException);
+        User user = userRepo.findByUsernameAuth(newRecipe.getUsername())
+                .orElseThrow(this::generateUserNotFoundException);
         newRecipe.setUser(user);
         var newRec = repo.save(newRecipe);
         newRec = repo.getByPublicId(newRec.getPublicId());
@@ -100,11 +99,14 @@ public class RecipeController {
 
     @PutMapping("/{id}")
     public @ResponseBody ResponseEntity<?> updateRecipe(@Valid @RequestBody Recipe newRecipe, @PathVariable String id) {
+        User user = userRepo.findByUsernameAuth(newRecipe.getUsername())
+                .orElseThrow(this::generateUserNotFoundException);
         Recipe rec = repo.findByPublicId(id)
                 .map(
                         recipe -> {
                             recipe.setName(newRecipe.getName());
                             recipe.setDescription(newRecipe.getDescription());
+                            recipe.setUsername(user.getUsername());
                             return repo.save(recipe);
                         })
                 .orElseThrow(this::generateNotFoundException);
@@ -142,17 +144,11 @@ public class RecipeController {
     public @ResponseBody ResponseEntity<?> createIngredientQuantity(
             @Valid @RequestBody IngredientQuantityWrite newIngredientQuantityData, @PathVariable String id) {
         Recipe rec = repo.findByPublicId(id).orElseThrow(this::generateNotFoundException);
-        Ingredient ingr = ingrRepo.findByPublicId(newIngredientQuantityData.getIngredient())
-                .or(() -> ingrRepo.findByName(newIngredientQuantityData.getIngredient()))
-                .orElseThrow(() -> generateNotFoundException("Ingredient"));
-        Unit ut = unitRepo.findByPublicId(newIngredientQuantityData.getUnit())
-                .or(() -> unitRepo.findByUnit(newIngredientQuantityData.getUnit()))
-                .orElseThrow(() -> generateNotFoundException("Unit"));
         var newIngrQuant = new IngredientQuantity();
         newIngrQuant.setQuantity(newIngredientQuantityData.getQuantity());
-        newIngrQuant.setIngredient(ingr);
+        newIngrQuant.setIngredient(newIngredientQuantityData.getIngredient());
         newIngrQuant.setRecipe(rec);
-        newIngrQuant.setUnit(ut);
+        newIngrQuant.setUnit(newIngredientQuantityData.getUnit());
         EntityModel<IngredientQuantity> ingrQ = ingrQAssembler.toModel(ingrQRepo.save(newIngrQuant));
         return ResponseEntity.created(ingrQ.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(ingrQ);
     }
@@ -173,7 +169,7 @@ public class RecipeController {
         return new NotFoundException("Recipe");
     }
 
-    private NotFoundException generateNotFoundException(String entity) {
-        return new NotFoundException(entity);
+    private NotFoundException generateUserNotFoundException() {
+        return new NotFoundException("User");
     }
 }

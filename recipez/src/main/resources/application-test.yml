@@ -6,7 +6,9 @@ spring:
     password:
   sql:
     init.mode: always
-    init.data-locations: classpath:recipes-data.sql
+    # Use this option to provide initial data
+    # E.g.: place data.sql in the same directory and use <sql-script-location>=data.sql
+    # init.data-locations: classpath:<sql-script-location>
   jpa:
     hibernate.ddl-auto: create
     defer-datasource-initialization: true

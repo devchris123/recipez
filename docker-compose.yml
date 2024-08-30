@@ -20,6 +20,9 @@ services:
       - DB_NAME=recipedb
       - REL_BASE_URL=http://localhost:8080
       - SPRING_CONFIG_LOCATION=classpath:application.yml,/run/secrets/.application.ssh-keys.yml,/run/secrets/.application.datasource.yml
+      - CAPTCHA_PRIVATE_KEY=6LdHiicqAAAAACbnKvtC7V-r9fYDBz_rENUYKJes
+      - ALLOWED_ORIGINS=http://recipe-next-app:3000
+
     secrets:
       - .application.ssh-keys.yml
       - .application.datasource.yml
@@ -29,6 +32,8 @@ services:
       dockerfile: Dockerfile_DB
       context: .
     container_name: recipe-db
+    ports:
+      - 3306:3306
     healthcheck:
       interval: 10s
       retries: 3

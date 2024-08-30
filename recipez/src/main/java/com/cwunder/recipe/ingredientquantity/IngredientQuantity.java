@@ -4,7 +4,6 @@ package com.cwunder.recipe.ingredientquantity;
 import java.math.BigDecimal;
 
 // JSON
-import com.cwunder.recipe.unit.Unit;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 // Jakarta 
@@ -14,23 +13,18 @@ import jakarta.validation.constraints.Positive;
 
 // Recipe
 import com.cwunder.recipe._shared.AppEntity;
-import com.cwunder.recipe.ingredient.Ingredient;
 import com.cwunder.recipe.recipe.Recipe;
 
 @Entity
 @Table(name = "IngredientQuantity")
 public class IngredientQuantity extends AppEntity {
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "ingredient", nullable = false)
-    private Ingredient ingredient;
+    private String ingredient;
 
     @NotNull
     @Positive
     private BigDecimal quantity;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "unit", nullable = false)
-    private Unit unit;
+    private String unit;
 
     @JsonBackReference
     @ManyToOne(fetch = FetchType.EAGER)
@@ -41,11 +35,11 @@ public class IngredientQuantity extends AppEntity {
         initialize();
     }
 
-    public Ingredient getIngredient() {
+    public String getIngredient() {
         return ingredient;
     }
 
-    public void setIngredient(Ingredient ingredient) {
+    public void setIngredient(String ingredient) {
         this.ingredient = ingredient;
     }
 
@@ -57,11 +51,11 @@ public class IngredientQuantity extends AppEntity {
         this.quantity = quantity;
     }
 
-    public Unit getUnit() {
+    public String getUnit() {
         return unit;
     }
 
-    public void setUnit(Unit unit) {
+    public void setUnit(String unit) {
         this.unit = unit;
     }
 

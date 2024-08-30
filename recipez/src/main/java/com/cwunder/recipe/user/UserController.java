@@ -1,8 +1,10 @@
 package com.cwunder.recipe.user;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.MethodParameter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
 
+import com.cwunder.recipe._shared.CaptchaErrorException;
 import com.cwunder.recipe._shared.ExistsException;
 import com.cwunder.recipe._shared.NotFoundException;
 
@@ -42,7 +45,9 @@ public class UserController {
     private final RestTemplate restTemplate;
 
     private final String CAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify?secret={secret}&response={response}";
-    private final String CAPTCHA_SECRET_KEY = "";
+
+    @Value("${captcha.private.key:default}")
+    private String CAPTCHA_SECRET_KEY;
 
     private final SmartValidator validator;
 
@@ -76,13 +81,14 @@ public class UserController {
     }
 
     private UserFormData validateUserFormData(MultiValueMap<String, String> newUserData)
-            throws MethodArgumentNotValidException, NoSuchMethodException, SecurityException {
+            throws MethodArgumentNotValidException, NoSuchMethodException, SecurityException, IllegalAccessException,
+            InvocationTargetException {
         var userFormData = parseUserFormData(newUserData);
         var result = new BeanPropertyBindingResult(userFormData, "UserData");
         validator.validate(userFormData, result);
         if (result.hasErrors()) {
-            throw new MethodArgumentNotValidException(new MethodParameter(
-                    this.getClass().getDeclaredMethod("createUser", UserController.class), 0), result);
+            var method = this.getClass().getDeclaredMethod("createUser", MultiValueMap.class);
+            throw new MethodArgumentNotValidException(new MethodParameter(method, 0), result);
         }
         return userFormData;
     }
@@ -100,10 +106,10 @@ public class UserController {
         uriVariables.put("response", formData.getGrecaptchaResponse());
         CaptchaData resp = restTemplate.postForObject(CAPTCHA_VERIFY_URL, null, CaptchaData.class, uriVariables);
         if (resp == null) {
-            throw new RuntimeException("Captcha not successfull");
+            throw new CaptchaErrorException("Captcha not successfull", null);
         }
         if (!resp.isSuccess()) {
-            throw new IllegalArgumentException("Captcha not successfull");
+            throw new CaptchaErrorException("Captcha not successfull", resp.getErrorCodes());
         }
     }
 
