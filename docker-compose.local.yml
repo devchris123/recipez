@@ -13,6 +13,7 @@ services:
     environment:
       - NEXTAUTH_SECRET=say_lalisa_love_me_lalisa_love_me_hey
       - API_RECIPEEZ_ORIGIN=http://recipe-app:8080
+      - NEXT_PUBLIC_RECAPTCHA_PUBLIC_KEY=6LdHiicqAAAAADIHyxmr3gEx_fRrvESy8o5a3h2E
     networks:
       - recipe-network
 

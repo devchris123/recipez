@@ -29,6 +29,8 @@ spec:
               value: http://recipe-next-app
             - name: API_RECIPEEZ_ORIGIN
               value: http://recipe-app
+            - name: NEXT_PUBLIC_RECAPTCHA_PUBLIC_KEY
+              value: 6LcUiicqAAAAAAR9EsR29VDjI-PWIRv-V3Tk-b_A
           image: chris132/recipe-next-app:latest
           imagePullPolicy: Always
           name: recipe-app

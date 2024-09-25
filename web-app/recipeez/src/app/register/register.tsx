@@ -96,7 +96,7 @@ export default function Register() {
         />
         <ReCAPTCHA
           ref={recaptchaRef}
-          sitekey="6LdHiicqAAAAADIHyxmr3gEx_fRrvESy8o5a3h2E"
+          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_PUBLIC_KEY ?? ""}
           key={form.key("g-recaptcha-response")}
           {...form.getInputProps("g-recaptcha-response")}
         />
